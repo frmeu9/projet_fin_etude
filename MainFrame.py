@@ -8,24 +8,22 @@ import time
 
 
 
-class selectFileFromCamera(tk.Frame):
-    def __init__(self, window, fileListe, **kwargs):
-        tk.Frame.__init__(self, window, width=1025, height=1025, **kwargs)
-        # labelMainFrame = tk.Label(self, text="Logiciel")
-        #         # labelMainFrame.pack()
-        self.pack()
+class selectFileFromCamera:
+    def __init__(self, master, fileListe):
+        self.master = master
+        master.title("Select file in")
 
         self.fileListe = fileListe
 
-        self.listMedia = tk.Listbox(self)
+        self.listMedia = tk.Listbox(master)
         for i in self.fileListe:
             self.listMedia.insert(tk.END, i)
         self.listMedia.pack()
 
-        self.buttonSelect = tk.Button(self, text="Select", command=self.okButton)
+        self.buttonSelect = tk.Button(master, text="Select", command=self.okButton)
         self.buttonSelect.pack()
 
-        self.buttonClose = tk.Button(self, text="Close", command=self.quit)
+        self.buttonClose = tk.Button(master, text="Close", command=self.master.quit)
         self.buttonClose.pack()
 
     def okButton(self):
@@ -33,21 +31,21 @@ class selectFileFromCamera(tk.Frame):
         return cameraFileInfo
 
 
-class downloadFile(tk.Frame):
-    def __init__(self, fenetre, **kwargs):
-        tk.Frame.__init__(self, fenetre, width=1025, height=1025, **kwargs)
-        self.pack()
+class downloadFile:
+    def __init__(self, master):
+        self.master = master
+        master.title("Download")
 
-        self.buttonGetFileFromComputer = tk.Button(self, text="Get file from computer", command=self.getFileFromComputer)
+        self.buttonGetFileFromComputer = tk.Button(master, text="Get file from computer", command=self.getFileFromComputer)
         self.buttonGetFileFromComputer.pack(fill=tk.X)
 
-        self.buttonGetFileFromCamera = tk.Button(self, text="Get file from Camera", command=self.getFileFromCamera)
+        self.buttonGetFileFromCamera = tk.Button(master, text="Get file from Camera", command=self.getFileFromCamera)
         self.buttonGetFileFromCamera.pack(fill=tk.X)
 
-        self.buttonGetNoiseFile = tk.Button(self, text="Get noise file from computer", command=self.getNoiseFile)
+        self.buttonGetNoiseFile = tk.Button(master, text="Get noise file from computer", command=self.getNoiseFile)
         self.buttonGetNoiseFile.pack(fill=tk.X)
 
-        self.buttonClose = tk.Button(self, text='Close', command=self.quit)
+        self.buttonClose = tk.Button(master, text='Close', command=self.master.quit)
         self.buttonClose.pack(fill=tk.X)
 
         self.computerFilePath = " "
@@ -63,10 +61,11 @@ class downloadFile(tk.Frame):
             fileList = gpCam.listMedia(True, True)
             gpCam.mode("1")
 
-            mini = selectFileFromCamera(tk.Tk(), fileList)
-            cameraFile = mini.okButton()
-            mini.mainloop()
-            mini.quit()
+            root3 = tk.Tk()
+            selectFileCamera = selectFileFromCamera(root3, fileList)
+            cameraFile = selectFileCamera.okButton()
+            root3.mainloop()
+            root3.destroy()
 
             folder = cameraFile[0]
             file = cameraFile[1]
@@ -82,33 +81,34 @@ class downloadFile(tk.Frame):
         pass
 
 
-class MainFrame(tk.Frame):
-    def __init__(self, fenetre, **kwargs):
-        tk.Frame.__init__(self, fenetre, width=1025, height=1025, **kwargs)
-        self.pack()
+class MainFrame:
+    def __init__(self, master):
+        self.master = master
+        master.title("Logiciel")
+        master.minsize(300,300)
 
         " Création des widgets "
-        self.buttonDownloadData = tk.Button(self, text="Download files", command=self.downloadFiles)
+        self.buttonDownloadData = tk.Button(master, text="Download files", command=self.downloadFiles)
         self.buttonDownloadData.pack(fill=tk.X)
 
-        self.buttonSuperposition = tk.Button(self, text="Superposition", command=self.superposition)
+        self.buttonSuperposition = tk.Button(master, text="Superposition", command=self.superposition)
         self.buttonSuperposition.pack(fill=tk.X)
 
-        self.buttonRefresh = tk.Button(self, text="Refresh", command=self.changeColorMap)
+        self.buttonRefresh = tk.Button(master, text="Refresh", command=self.changeColorMap)
         self.buttonRefresh.pack(fill=tk.X)
 
-        self.buttonSaveAs = tk.Button(self, text="Save As", command=self.saveAs)
+        self.buttonSaveAs = tk.Button(master, text="Save As", command=self.saveAs)
         self.buttonSaveAs.pack(fill=tk.X)
 
-        self.buttonCancelMainFrame = tk.Button(self, text='Close', command=self.quit)
+        self.buttonCancelMainFrame = tk.Button(master, text='Close', command=self.master.quit)
         self.buttonCancelMainFrame.pack(fill=tk.X)
 
         self.colormapChoice = tk.StringVar()
-        self.choiceViridis = tk.Radiobutton(self, text='Viridis', variable=self.colormapChoice, value='viridis')
+        self.choiceViridis = tk.Radiobutton(master, text='Viridis', variable=self.colormapChoice, value='viridis')
         self.choiceViridis.pack()
-        self.choiceMagma = tk.Radiobutton(self, text='Magma', variable=self.colormapChoice, value='magma')
+        self.choiceMagma = tk.Radiobutton(master, text='Magma', variable=self.colormapChoice, value='magma')
         self.choiceMagma.pack()
-        self.choiceCividis = tk.Radiobutton(self, text='Cividis', variable=self.colormapChoice, value='cividis')
+        self.choiceCividis = tk.Radiobutton(master, text='Cividis', variable=self.colormapChoice, value='cividis')
         self.choiceCividis.pack()
 
         " DATA "
@@ -119,14 +119,14 @@ class MainFrame(tk.Frame):
         self.computerFilePath = " "
 
     def downloadFiles(self):
-        download = downloadFile(tk.Tk())
+        root2 = tk.Tk()
+        downloadFrame = downloadFile(root2)
+        root2.mainloop()
+        root2.destroy()
 
-        download.mainloop()
-        download.quit()
 
-
-        self.computerFilePath = download.computerFilePath
-        self.img = download.img
+        self.computerFilePath = downloadFrame.computerFilePath
+        self.img = downloadFrame.img
 
         print(self.computerFilePath)
 
@@ -151,6 +151,7 @@ class MainFrame(tk.Frame):
         pass
 
 
-interface = MainFrame(tk.Tk())
-interface.mainloop()
-interface.destroy()
+root = tk.Tk()
+interface = MainFrame(root)
+root.mainloop()
+root.destroy()
