@@ -4,7 +4,6 @@ import tkinter
 from tkinter import *
 from tkinter import filedialog
 import cv2
-import goprocam
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -28,12 +27,12 @@ from numpy import array, arange, sin, pi
 #     cv2.destroyAllWindows()
 
 #######################
-from goprocam import GoProCamera
-from goprocam import constants
-import time
-gpCam = GoProCamera.GoPro(constants.auth)
-gpCam.overview()
-gpCam.listMedia(True)
+# from goprocam import GoProCamera
+# from goprocam import constants
+# import time
+# gpCam = GoProCamera.GoPro(constants.auth)
+# gpCam.overview()
+# gpCam.listMedia(True)
 
 
 #########################
@@ -85,3 +84,5 @@ gpCam.listMedia(True)
 # button.pack()
 # frame.pack()
 # root.mainloop()
+
+###############################
