@@ -244,3 +244,15 @@
 # interface = MainFrame(root)
 # root.mainloop()
 # root.destroy()
+############################################
+# import matplotlib.pyplot as plt
+# import matplotlib.image as mpimg
+# from matplotlib.colors import ListedColormap
+#
+# import numpy as np
+#
+# image = mpimg.imread("C:/Users/meuni/Desktop/ÉCOLE/UNI/Session A4/Projet de fin d'étude/projet_fin_etude/src/image/softdb.png")
+# print(image)
+#
+# plt.imshow(image, cmap="viridis")
+# plt.show()

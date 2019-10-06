@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>606</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,6 +27,7 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="MN_file_exit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -37,12 +38,64 @@
     <property name="title">
      <string>Options</string>
     </property>
+    <widget class="QMenu" name="menuColormap">
+     <property name="title">
+      <string>Colormap</string>
+     </property>
+     <addaction name="MN_options_colormap_viridis"/>
+     <addaction name="MN_options_colormap_magma"/>
+     <addaction name="MN_options_colormap_gray"/>
+    </widget>
+    <addaction name="menuColormap"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="MN_help_documentations"/>
+    <addaction name="MN_help_acknowledgement"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuOptions"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="MN_file_exit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="MN_options_colormap_viridis">
+   <property name="text">
+    <string>viridis</string>
+   </property>
+  </action>
+  <action name="MN_options_colormap_magma">
+   <property name="text">
+    <string>magma</string>
+   </property>
+  </action>
+  <action name="MN_options_colormap_cividis">
+   <property name="text">
+    <string>cividis</string>
+   </property>
+  </action>
+  <action name="MN_options_colormap_gray">
+   <property name="text">
+    <string>gray</string>
+   </property>
+  </action>
+  <action name="MN_help_documentations">
+   <property name="text">
+    <string>Documentation</string>
+   </property>
+  </action>
+  <action name="MN_help_acknowledgement">
+   <property name="text">
+    <string>Acknowledgement</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
