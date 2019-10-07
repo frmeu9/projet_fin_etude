@@ -17,23 +17,26 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         super(MergeDataWidget, self).__init__()
         self.setupUi(self)
         self.connect_button()
-        self.colormap = 'gray'
+        self.goproColormap = 'gray'
+        self.noiseDataColormap = 'gray'
         self.noiseDataPath = ''
+        self.mergeDataButtonClicks = 0
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.display_gopro_image)
         self.PB_loadNoiseFile.clicked.connect(self.display_noise_data)
+        self.PB_fromCamera.clicked.connect(self.load_from_gopro)
         self.PB_saveAs.clicked.connect(self.save_as)
+        self.PB_mergeData.clicked.connect(self.merge_data)
 
     def display_gopro_image(self):
         path = self.ask_open_filename()
-        self.colormap = 'gray'
-        self.display_image_to_label(self.LA_imageGopro, path)
+        self.display_image_to_label(self.LA_imageGopro, path, self.goproColormap)
 
     def display_noise_data(self):
         self.noiseDataPath = self.ask_open_filename()
-        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
-        #self.display_data_to_label(self.LA_noiseData, path)
+        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        #self.display_data_to_label(self.LA_noiseData)
 
     def ask_open_filename(self):
         path = QFileDialog.getOpenFileName()
@@ -52,36 +55,38 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         pass
 
     def merge_data(self):
-        pass
+        self.mergeDataButtonClicks += 1
+        self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
 
     def save_as(self):
-        # p = self.array2pixmap()
-        # fileName = QFileDialog.getSaveFileName(self, 'Save File', '', '*.jpg')
-        # p.save(fileName, "PNG")
-        pass
+        img_gray = self.image2gray(self.noiseDataPath)
+        finalImagePixmap = self.array2pixmap(img_gray, self.noiseDataColormap)
+        fileName = QFileDialog.getSaveFileName(self, 'Save File', 'finalImage', '*.png')
+        finalImagePixmap.save(fileName[0], 'png')
 
-    def display_image_to_label(self, myLabel, path):
+    def display_image_to_label(self, myLabel, path, colormap):
         img_gray = self.image2gray(path)
-        pixmap = self.array2pixmap(img_gray)
+        pixmap = self.array2pixmap(img_gray, colormap)
         myLabel.setPixmap(pixmap)
+        return pixmap
 
-    def display_data_to_label(self, myLabel, path):
+    def display_data_to_label(self, myLabel, path, colormap):
         pass
 
     def image2gray(self, path):
         img = cv2.imread(path,0)
         return img
 
-    def array2pixmap(self, array):
-        sm = cm.ScalarMappable(cmap=self.colormap)
+    def array2pixmap(self, array, colormap):
+        sm = cm.ScalarMappable(cmap=colormap)
         rgb_im = sm.to_rgba(array, bytes=True, norm=False)
         qim = QImage(rgb_im, rgb_im.shape[1], rgb_im.shape[0], rgb_im.shape[1]*4, QImage.Format_RGBA8888)
         pix = QPixmap(qim)
         return pix
 
-    def define_colormap(self, colormap):
-        if self.noiseDataPath == '':
-            self.colormap = colormap
-        else:
-            self.colormap = colormap
-            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
+    def set_noise_colormap(self, colormap):
+        self.noiseDataColormap = colormap
+        if self.noiseDataPath != '':
+            if self.mergeDataButtonClicks > 0:
+                self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
+            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
