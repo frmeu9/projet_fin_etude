@@ -4,6 +4,7 @@ from views.MainWindow import MainWindow
 import ctypes
 import sys
 
+
 class App(QApplication):
     def __init__(self, sys_argv):
         super(App, self).__init__(sys_argv)
@@ -113,7 +114,8 @@ QLineEdit
 QPushButton
 {
     color: #b1b1b1;
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #565656, stop: 0.1 #525252, stop: 0.5 #4e4e4e, stop: 0.9 #4a4a4a, stop: 1 #464646);
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #565656, stop: 0.1 #525252, 
+    stop: 0.5 #4e4e4e, stop: 0.9 #4a4a4a, stop: 1 #464646);
     border-width: 1px;
     border-color: #1e1e1e;
     border-style: solid;
@@ -126,13 +128,15 @@ QPushButton
 
 QPushButton:pressed
 {
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #2d2d2d, stop: 0.1 #2b2b2b, stop: 0.5 #292929, stop: 0.9 #282828, stop: 1 #252525);
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #2d2d2d, stop: 0.1 #2b2b2b, 
+    stop: 0.5 #292929, stop: 0.9 #282828, stop: 1 #252525);
 }
 
 QComboBox
 {
     selection-background-color: #ffaa00;
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #565656, stop: 0.1 #525252, stop: 0.5 #4e4e4e, stop: 0.9 #4a4a4a, stop: 1 #464646);
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #565656, stop: 0.1 #525252, 
+    stop: 0.5 #4e4e4e, stop: 0.9 #4a4a4a, stop: 1 #464646);
     border-style: solid;
     border: 1px solid #1e1e1e;
     border-radius: 5;
@@ -148,7 +152,8 @@ QComboBox:on
 {
     padding-top: 3px;
     padding-left: 4px;
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #2d2d2d, stop: 0.1 #2b2b2b, stop: 0.5 #292929, stop: 0.9 #282828, stop: 1 #252525);
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #2d2d2d, stop: 0.1 #2b2b2b, 
+    stop: 0.5 #292929, stop: 0.9 #282828, stop: 1 #252525);
     selection-background-color: #ffaa00;
 }
 
@@ -292,7 +297,8 @@ QPlainTextEdit
 
 QHeaderView::section
 {
-    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:0 #616161, stop: 0.5 #505050, stop: 0.6 #434343, stop:1 #656565);
+    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:0 #616161, stop: 0.5 #505050, 
+    stop: 0.6 #434343, stop:1 #656565);
     color: white;
     padding-left: 4px;
     border: 1px solid #6c6c6c;
@@ -329,7 +335,8 @@ QDockWidget::close-button:pressed, QDockWidget::float-button:pressed
 
 QMainWindow::separator
 {
-    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:0 #161616, stop: 0.5 #151515, stop: 0.6 #212121, stop:1 #343434);
+    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:0 #161616, stop: 0.5 #151515, 
+    stop: 0.6 #212121, stop:1 #343434);
     color: white;
     padding-left: 4px;
     border: 1px solid #4c4c4c;
@@ -355,7 +362,8 @@ QToolBar::handle
 QMenu::separator
 {
     height: 2px;
-    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:0 #161616, stop: 0.5 #151515, stop: 0.6 #212121, stop:1 #343434);
+    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:0 #161616, stop: 0.5 #151515, 
+    stop: 0.6 #212121, stop:1 #343434);
     color: white;
     padding-left: 4px;
     margin-left: 10px;
@@ -428,7 +436,8 @@ QTabBar::tab:!selected:hover
     padding-bottom: 3px;*/
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
-    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:1 #212121, stop:0.4 #343434, stop:0.2 #343434, stop:0.1 #ffaa00);
+    background-color: QLinearGradient(x1:0, y1:0, x2:0, y2:1, stop:1 #212121, stop:0.4 #343434, 
+    stop:0.2 #343434, stop:0.1 #ffaa00);
 }
 
 QRadioButton::indicator:checked, QRadioButton::indicator:unchecked{
@@ -480,5 +489,6 @@ QCheckBox::indicator:disabled, QRadioButton::indicator:disabled
     app.setWindowIcon(QIcon(".\\image\\softdb.png"))
     sys.exit(app.exec_())
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     main()

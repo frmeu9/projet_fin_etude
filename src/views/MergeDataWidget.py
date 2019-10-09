@@ -2,8 +2,8 @@ from PyQt5.QtWidgets import QWidget, QFileDialog
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import uic, QtCore
 from matplotlib import cm
-import matplotlib.pyplot as plt
-import numpy as np
+# import matplotlib.pyplot as plt
+# import numpy as np
 # import matplotlib.image as mpimg
 # from goprocam import GoProCamera, constants
 import cv2
@@ -11,6 +11,7 @@ import os
 
 MergeDataWidgetPath = os.path.dirname(os.path.realpath(__file__)) + '\\MergeDataWidget.ui'
 Ui_MergeDataWidget, QtBaseClass = uic.loadUiType(MergeDataWidgetPath)
+
 
 class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def __init__(self):
@@ -37,7 +38,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def display_noise_data(self):
         self.noiseDataPath = self.ask_open_filename()
         self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
-        #self.display_data_to_label(self.LA_noiseData)
+        # self.display_data_to_label(self.LA_noiseData)
 
     def ask_open_filename(self):
         path = QFileDialog.getOpenFileName()
@@ -79,13 +80,13 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         pass
 
     def image2gray(self, path):
-        img = cv2.imread(path,0)
+        img = cv2.imread(path, 0)
         return img
 
     def array2pixmap(self, array, colormap):
         sm = cm.ScalarMappable(cmap=colormap)
         rgb_im = sm.to_rgba(array, bytes=True, norm=False)
-        qim = QImage(rgb_im, rgb_im.shape[1], rgb_im.shape[0], rgb_im.shape[1]*4,QImage.Format_RGBA8888)
+        qim = QImage(rgb_im, rgb_im.shape[1], rgb_im.shape[0], rgb_im.shape[1]*4, QImage.Format_RGBA8888)
         pix = QPixmap(qim)
         return pix
 
