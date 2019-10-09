@@ -96,6 +96,11 @@
     <string>Acknowledgement</string>
    </property>
   </action>
+  <action name="MN_options_colormap_cividis_2">
+   <property name="text">
+    <string>cividis</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

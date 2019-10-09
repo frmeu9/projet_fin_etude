@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QFileDialog
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5 import uic
+from PyQt5 import uic, QtCore
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +20,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproColormap = 'gray'
         self.noiseDataColormap = 'gray'
         self.noiseDataPath = ''
+        self.goproImagePath = ''
         self.mergeDataButtonClicks = 0
 
     def connect_button(self):
@@ -30,8 +31,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_mergeData.clicked.connect(self.merge_data)
 
     def display_gopro_image(self):
-        path = self.ask_open_filename()
-        self.display_image_to_label(self.LA_imageGopro, path, self.goproColormap)
+        self.goproImagePath = self.ask_open_filename()
+        self.display_image_to_label(self.LA_imageGopro, self.goproImagePath, self.goproColormap)
 
     def display_noise_data(self):
         self.noiseDataPath = self.ask_open_filename()
@@ -67,7 +68,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def display_image_to_label(self, myLabel, path, colormap):
         img_gray = self.image2gray(path)
         pixmap = self.array2pixmap(img_gray, colormap)
-        myLabel.setPixmap(pixmap)
+        width = myLabel.frameGeometry().width()
+        height = myLabel.frameGeometry().height()
+        pixmap_scaled = pixmap.scaled(height, width, QtCore.Qt.KeepAspectRatio)
+        myLabel.setAlignment(QtCore.Qt.AlignCenter)
+        myLabel.setPixmap(pixmap_scaled)
         return pixmap
 
     def display_data_to_label(self, myLabel, path, colormap):
@@ -80,7 +85,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def array2pixmap(self, array, colormap):
         sm = cm.ScalarMappable(cmap=colormap)
         rgb_im = sm.to_rgba(array, bytes=True, norm=False)
-        qim = QImage(rgb_im, rgb_im.shape[1], rgb_im.shape[0], rgb_im.shape[1]*4, QImage.Format_RGBA8888)
+        qim = QImage(rgb_im, rgb_im.shape[1], rgb_im.shape[0], rgb_im.shape[1]*4,QImage.Format_RGBA8888)
         pix = QPixmap(qim)
         return pix
 
