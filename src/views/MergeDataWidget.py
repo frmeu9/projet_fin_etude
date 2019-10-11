@@ -50,24 +50,24 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         return path[0]
 
     def load_from_gopro(self):
-        gpCam = GoProCamera.GoPro(constants.auth)
-        cameraFile = gpCam.listMedia(True, True)
-        # cameraFile = [['100GBACK', 'GPBK0001.MP4', '207900848', '1518187858'],
-        #               ['100GBACK', 'GPBK0002.MP4', '75187863', '1518188764'],
-        #               ['100GBACK', 'GPBK0006.JPG', '2809450', '1518271226'],
-        #               ['100GBACK', 'GPBK0007.MP4', '1835045', '1518874876'],
-        #               ['100GBACK', 'GPBK0008.MP4', '873464', '1518884630'],
-        #               ['100GBACK', 'GPBK0009.MP4', '151566930', '1518885188'],
-        #               ['100GBACK', 'GPBK0010.JPG', '3054955', '1518885454']]
+        # gpCam = GoProCamera.GoPro(constants.auth)
+        # cameraFile = gpCam.listMedia(True, True)
+        cameraFile = [['100GBACK', 'GPBK0001.MP4', '207900848', '1518187858'],
+                      ['100GBACK', 'GPBK0002.MP4', '75187863', '1518188764'],
+                      ['100GBACK', 'GPBK0006.JPG', '2809450', '1518271226'],
+                      ['100GBACK', 'GPBK0007.MP4', '1835045', '1518874876'],
+                      ['100GBACK', 'GPBK0008.MP4', '873464', '1518884630'],
+                      ['100GBACK', 'GPBK0009.MP4', '151566930', '1518885188'],
+                      ['100GBACK', 'GPBK0010.JPG', '3054955', '1518885454']]
         self.selectGoproFile = SelectGoproFile(cameraFile)
         self.selectGoproFile.exec_()
         imageFileName =  self.selectGoproFile.fileName
 
-        frontCameraPath = '100GFRNT'
+        # frontCameraPath = '100GFRNT'
         # backCameraPath = '100GBACK'
 
         # gpCam = GoProCamera.GoPro(constants.auth)
-        img_front = gpCam.downloadMedia(frontCameraPath, imageFileName)
+        # img_front = gpCam.downloadMedia(frontCameraPath, imageFileName)
         # img = gpCam.downloadMedia(backCameraPath, imageFileName)
 
     def merge_data(self):
@@ -76,8 +76,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_saveAs.setEnabled(True)
 
     def save_finale_image(self):
-        img_gray = self.image2gray(self.noiseDataPath)
-        finalImagePixmap = self.array2pixmap(img_gray, self.noiseDataColormap)
+        imgGray = self.image2gray(self.noiseDataPath)
+        finalImagePixmap = self.array2pixmap(imgGray, self.noiseDataColormap)
         self.save_data(finalImagePixmap)
 
     def save_data(self, imageToSave):
@@ -85,13 +85,13 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         imageToSave.save(fileName[0], 'png')
 
     def display_image_to_label(self, myLabel, path, colormap):
-        img_gray = self.image2gray(path)
-        pixmap = self.array2pixmap(img_gray, colormap)
+        imgGray = self.image2gray(path)
+        pixmap = self.array2pixmap(imgGray, colormap)
         width = myLabel.frameGeometry().width()
         height = myLabel.frameGeometry().height()
-        pixmap_scaled = pixmap.scaled(height, width, QtCore.Qt.KeepAspectRatio)
+        pixmapScaled = pixmap.scaled(height, width, QtCore.Qt.KeepAspectRatio)
         myLabel.setAlignment(QtCore.Qt.AlignCenter)
-        myLabel.setPixmap(pixmap_scaled)
+        myLabel.setPixmap(pixmapScaled)
         return pixmap
 
     def display_data_to_label(self, myLabel, path, colormap):
@@ -103,9 +103,9 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def array2pixmap(self, array, colormap):
         sm = cm.ScalarMappable(cmap=colormap)
-        rgb_im = sm.to_rgba(array, bytes=True, norm=False)
-        qim = QImage(rgb_im, rgb_im.shape[1], rgb_im.shape[0], rgb_im.shape[1]*4, QImage.Format_RGBA8888)
-        pix = QPixmap(qim)
+        rgbImage = sm.to_rgba(array, bytes=True, norm=False)
+        qImg = QImage(rgbImage, rgbImage.shape[1], rgbImage.shape[0], rgbImage.shape[1]*4, QImage.Format_RGBA8888)
+        pix = QPixmap(qImg)
         return pix
 
     def set_noise_colormap(self, colormap):
