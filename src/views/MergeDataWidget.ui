@@ -95,6 +95,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="PB_fromCamera">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="text">
               <string>From Camera</string>
              </property>

@@ -41,7 +41,7 @@ QWidget:item:hover
 
 QWidget:item:selected
 {
-    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);
+    background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #0d69a6, stop: 1 #0b5485);
 }
 
 QMenuBar::item
@@ -52,7 +52,7 @@ QMenuBar::item
 QMenuBar::item:selected
 {
     background: transparent;
-    border: 1px solid #ffaa00;
+    border: 1px solid #0d69a6;
 }
 
 QMenuBar::item:pressed
@@ -144,7 +144,7 @@ QComboBox
 
 QComboBox:hover,QPushButton:hover
 {
-    border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #ffa02f, stop: 1 #d7801a);
+    border: 2px solid QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #0d69a6, stop: 1 #0b5485);
 }
 
 
@@ -486,6 +486,7 @@ QCheckBox::indicator:disabled, QRadioButton::indicator:disabled
     border: 1px solid #444;
 }
     ''')
+    # Pour change la couleur bleue: QWidget:item:selected et QComboBox:hover,QPushButton:hover
     app.setWindowIcon(QIcon(".\\image\\softdb.png"))
     sys.exit(app.exec_())
 
