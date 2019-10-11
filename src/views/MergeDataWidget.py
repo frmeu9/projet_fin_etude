@@ -27,12 +27,13 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.mergeDataButtonClicks = 0
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
+        self.PB_fromCamera.setEnabled(True)
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
         self.PB_loadNoiseFile.clicked.connect(self.display_noise_data)
         self.PB_fromCamera.clicked.connect(self.load_from_gopro)
-        self.PB_saveAs.clicked.connect(self.save_finale_image)
+        self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
 
     def load_from_computer(self):
@@ -51,7 +52,10 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def load_from_gopro(self):
         # gpCam = GoProCamera.GoPro(constants.auth)
-        # cameraFile = gpCam.listMedia(True, True)
+        # cameraFile = gpCam.listMedia(format=True, media_array=True)
+        # gpCam.shutter(constants.stop)
+        # print(gpCam.IsRecording())
+
         cameraFile = [['100GBACK', 'GPBK0001.MP4', '207900848', '1518187858'],
                       ['100GBACK', 'GPBK0002.MP4', '75187863', '1518188764'],
                       ['100GBACK', 'GPBK0006.JPG', '2809450', '1518271226'],
@@ -62,6 +66,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.selectGoproFile = SelectGoproFile(cameraFile)
         self.selectGoproFile.exec_()
         imageFileName =  self.selectGoproFile.fileName
+
 
         # frontCameraPath = '100GFRNT'
         # backCameraPath = '100GBACK'
@@ -75,7 +80,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
         self.PB_saveAs.setEnabled(True)
 
-    def save_finale_image(self):
+    def save_final_image(self):
         imgGray = self.image2gray(self.noiseDataPath)
         finalImagePixmap = self.array2pixmap(imgGray, self.noiseDataColormap)
         self.save_data(finalImagePixmap)
