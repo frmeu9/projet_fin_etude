@@ -27,7 +27,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.mergeDataButtonClicks = 0
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
-        self.PB_fromCamera.setEnabled(True)
+        self.PB_fromCamera.setEnabled(False)
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
@@ -37,8 +37,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_mergeData.clicked.connect(self.merge_data)
 
     def load_from_computer(self):
-        self.goproImagePath = self.ask_open_filename()
-        self.display_image_to_label(self.LA_imageGopro, self.goproImagePath, self.goproColormap)
+        try:
+            self.goproImagePath = self.ask_open_filename()
+            self.display_image_to_label(self.LA_imageGopro, self.goproImagePath, self.goproColormap)
+        except TypeError:
+            self.PB_fromCamera.setEnabled(True)
 
     def display_noise_data(self):
         self.noiseDataPath = self.ask_open_filename()
@@ -51,29 +54,32 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         return path[0]
 
     def load_from_gopro(self):
-        # gpCam = GoProCamera.GoPro(constants.auth)
-        # cameraFile = gpCam.listMedia(format=True, media_array=True)
-        # gpCam.shutter(constants.stop)
-        # print(gpCam.IsRecording())
+        try:
+            # gpCam = GoProCamera.GoPro(constants.auth)
+            # cameraFile = gpCam.listMedia(format=True, media_array=True)
+            # gpCam.shutter(constants.stop)
+            # print(gpCam.IsRecording())
+            cameraFile = [['100GBACK', 'GPBK0001.MP4', '207900848', '1518187858'],
+                        ['100GBACK', 'GPBK0002.MP4', '75187863', '1518188764'],
+                        ['100GBACK', 'GPBK0006.JPG', '2809450', '1518271226'],
+                        ['100GBACK', 'GPBK0007.MP4', '1835045', '1518874876'],
+                        ['100GBACK', 'GPBK0008.MP4', '873464', '1518884630'],
+                        ['100GBACK', 'GPBK0009.MP4', '151566930', '1518885188'],
+                        ['100GBACK', 'GPBK0010.JPG', '3054955', '1518885454']]
+            self.selectGoproFile = SelectGoproFile(cameraFile)
+            self.selectGoproFile.exec_()
+            imageFileName =  self.selectGoproFile.fileName
 
-        cameraFile = [['100GBACK', 'GPBK0001.MP4', '207900848', '1518187858'],
-                      ['100GBACK', 'GPBK0002.MP4', '75187863', '1518188764'],
-                      ['100GBACK', 'GPBK0006.JPG', '2809450', '1518271226'],
-                      ['100GBACK', 'GPBK0007.MP4', '1835045', '1518874876'],
-                      ['100GBACK', 'GPBK0008.MP4', '873464', '1518884630'],
-                      ['100GBACK', 'GPBK0009.MP4', '151566930', '1518885188'],
-                      ['100GBACK', 'GPBK0010.JPG', '3054955', '1518885454']]
-        self.selectGoproFile = SelectGoproFile(cameraFile)
-        self.selectGoproFile.exec_()
-        imageFileName =  self.selectGoproFile.fileName
+            # frontCameraPath = '100GFRNT'
+            # backCameraPath = '100GBACK'
 
+            # gpCam = GoProCamera.GoPro(constants.auth)
+            # img_front = gpCam.downloadMedia(frontCameraPath, imageFileName)
+            # img = gpCam.downloadMedia(backCameraPath, imageFileName)
+        except AttributeError:
+            self.PB_fromCamera.setEnabled(False)
+            self.load_from_computer()
 
-        # frontCameraPath = '100GFRNT'
-        # backCameraPath = '100GBACK'
-
-        # gpCam = GoProCamera.GoPro(constants.auth)
-        # img_front = gpCam.downloadMedia(frontCameraPath, imageFileName)
-        # img = gpCam.downloadMedia(backCameraPath, imageFileName)
 
     def merge_data(self):
         self.mergeDataButtonClicks += 1
