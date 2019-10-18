@@ -12,6 +12,7 @@ import cv2
 import os
 from bs4 import BeautifulSoup
 import requests
+# import pandas
 
 MergeDataWidgetPath = os.path.dirname(os.path.realpath(__file__)) + '\\MergeDataWidget.ui'
 Ui_MergeDataWidget, QtBaseClass = uic.loadUiType(MergeDataWidgetPath)
@@ -103,10 +104,10 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def display_noise_data(self):
         self.noiseDataPath = self.ask_open_filename('Choose Noise File')
-        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        # self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.loadNoiseFileButtonClicks += 1
         self.enableMergeDataButton()
-        # self.display_data_to_label(self.LA_noiseData)
 
     def enableMergeDataButton(self):
         if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
@@ -115,7 +116,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def merge_data(self):
         self.mergeDataButtonClicks += 1
-        self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
+        # self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.PB_saveAs.setEnabled(True)
 
     def save_final_image(self):
@@ -138,7 +140,10 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         return pixmap
 
     def display_data_to_label(self, myLabel, path, colormap):
-        pass
+        file = open(path, 'r') # test avec fichier txt d'export
+        fileLine = file.readlines()
+        print(fileLine[35:38])
+        file.close()
 
     def image2gray(self, path):
         img = cv2.imread(path, 0)
