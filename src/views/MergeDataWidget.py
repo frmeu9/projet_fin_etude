@@ -107,9 +107,9 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         # self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.loadNoiseFileButtonClicks += 1
-        self.enableMergeDataButton()
+        self.enable_merge_mata_button()
 
-    def enableMergeDataButton(self):
+    def enable_merge_mata_button(self):
         if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
             if self.loadNoiseFileButtonClicks > 0:
                 self.PB_mergeData.setEnabled(True)
