@@ -10,6 +10,8 @@ from goprocam import GoProCamera, constants
 from views.SelectGoproFile import SelectGoproFile
 import cv2
 import os
+from bs4 import BeautifulSoup
+import requests
 
 MergeDataWidgetPath = os.path.dirname(os.path.realpath(__file__)) + '\\MergeDataWidget.ui'
 Ui_MergeDataWidget, QtBaseClass = uic.loadUiType(MergeDataWidgetPath)
@@ -56,30 +58,44 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def load_from_gopro(self):
         try:
             # gpCam = GoProCamera.GoPro(constants.auth)
-            # cameraFile = gpCam.listMedia(format=True, media_array=True)
-            # gpCam.shutter(constants.stop)
-            # print(gpCam.IsRecording())
+            # cameraDir = gpCam.getMediaFusion()
+            # mediaInfo = gpCam.getMediaInfo(')
+            # print(mediaInfo)
+            cameraDir = ['http://10.5.5.9/videos/DCIM/100GBACK/GPFR0010.JPG',
+                         'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+            cameraDir[0] = cameraDir[0][0:37]
+            cameraDir[1] = cameraDir[1][0:38]
+            print(cameraDir)
+
+            # cameraFile = []
             cameraFile = [['100GBACK', 'GPBK0001.MP4', '207900848', '1518187858'],
-                        ['100GBACK', 'GPBK0002.MP4', '75187863', '1518188764'],
-                        ['100GBACK', 'GPBK0006.JPG', '2809450', '1518271226'],
-                        ['100GBACK', 'GPBK0007.MP4', '1835045', '1518874876'],
-                        ['100GBACK', 'GPBK0008.MP4', '873464', '1518884630'],
-                        ['100GBACK', 'GPBK0009.MP4', '151566930', '1518885188'],
-                        ['100GBACK', 'GPBK0010.JPG', '3054955', '1518885454']]
+                          ['100GBACK', 'GPBK0002.MP4', '75187863', '1518188764'],
+                          ['100GBACK', 'GPBK0006.JPG', '2809450', '1518271226'],
+                          ['100GBACK', 'GPBK0007.MP4', '1835045', '1518874876'],
+                          ['100GBACK', 'GPBK0008.MP4', '873464', '1518884630'],
+                          ['100GBACK', 'GPBK0009.MP4', '151566930', '1518885188'],
+                          ['100GBACK', 'GPBK0010.JPG', '3054955', '1518885454']]
+            #
+            # for file in self.get_online_file(cameraDir[1]):
+            #     cameraFile.append(cameraDir[1][0:15] +  file)
+            #
+            #
+            # print(cameraFile)
+
             self.selectGoproFile = SelectGoproFile(cameraFile)
             self.selectGoproFile.exec_()
             imageFileName =  self.selectGoproFile.fileName
+            print(imageFileName)
 
-            # frontCameraPath = '100GFRNT'
-            # backCameraPath = '100GBACK'
-
-            # gpCam = GoProCamera.GoPro(constants.auth)
-            # img_front = gpCam.downloadMedia(frontCameraPath, imageFileName)
-            # img = gpCam.downloadMedia(backCameraPath, imageFileName)
         except AttributeError:
             self.PB_fromCamera.setEnabled(False)
             self.load_from_computer()
 
+    def get_online_file(self, url):
+        ext = '.JPG'
+        page = requests.get(url).text
+        soup = BeautifulSoup(page, 'html.parser')
+        return [node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
 
     def merge_data(self):
         self.mergeDataButtonClicks += 1

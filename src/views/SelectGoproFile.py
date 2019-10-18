@@ -29,5 +29,5 @@ class SelectGoproFile(QDialog, Ui_SelectGoproFile):
             x.append(str(self.LI_goproFilename.selectedItems()[i].text()))
 
         self.fileName = x[0]
-        print(self.fileName)
+        # print(self.fileName)
         self.close()
