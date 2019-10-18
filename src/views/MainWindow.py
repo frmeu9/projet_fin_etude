@@ -47,7 +47,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def menu_help_acknow(self):
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Information)
-        msgBox.setText("Acknowledgement: \n Thanks to PYMARC2 for helping with the programmation \n"
-                       "(and the css stylesheet). ")
+        msgBox.setText("Acknowledgement: \n \n"
+                       "Thanks also to Michel Pearson, Philippe Laliberté and Samuel Duclos for their help. Thanks also "
+                       "to PYMARC2 for helping with the programmation (and the css stylesheet). \n \n "
+                       "Finally, thanks to Soft dB Inc. for this opportunity. ")
         msgBox.setWindowTitle("Acknowledgement")
         msgBox.exec_()
