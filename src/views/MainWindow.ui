@@ -104,6 +104,21 @@
     <string>cividis</string>
    </property>
   </action>
+  <action name="MN_options_colormap_cividis_3">
+   <property name="text">
+    <string>cividis</string>
+   </property>
+  </action>
+  <action name="MN_options_colormap_plasma">
+   <property name="text">
+    <string>plasma</string>
+   </property>
+  </action>
+  <action name="MN_options_colormap_inferno">
+   <property name="text">
+    <string>inferno</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

@@ -12,10 +12,11 @@ class SelectGoproFile(QDialog, Ui_SelectGoproFile):
         super(SelectGoproFile, self).__init__()
         self.setupUi(self)
         self.connect_button()
+        self.setWindowTitle('Select GoPro Image')
         self.fileName = ''
 
         for i in range(len(cameraFileList)):
-            fileName = cameraFileList[i][1]
+            fileName = cameraFileList[i]
             self.LI_goproFilename.addItem(fileName)
 
     def connect_button(self):

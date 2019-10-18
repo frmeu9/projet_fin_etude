@@ -22,12 +22,18 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         super(MergeDataWidget, self).__init__()
         self.setupUi(self)
         self.connect_button()
+
         self.goproColormap = 'gray'
         self.noiseDataColormap = 'gray'
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
         self.goproBackImagePath = ''
+
+        self.fromComputerButtonClicks = 0
+        self.fromCameraButtonClicks = 0
+        self.loadNoiseFileButtonClicks = 0
         self.mergeDataButtonClicks = 0
+
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
         self.PB_fromCamera.setEnabled(False)
@@ -39,66 +45,73 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
 
+    def ask_open_filename(self, windowTitle):
+        path = QFileDialog.getOpenFileName(self, windowTitle)
+        return path[0]
+
     def load_from_computer(self):
         try:
             self.goproFrontImagePath = self.ask_open_filename('Choose front GoPro Image')
             self.display_image_to_label(self.LA_imageGoproFront, self.goproFrontImagePath, self.goproColormap)
             self.goproBackImagePath = self.ask_open_filename('Choose back GoPro Image')
             self.display_image_to_label(self.LA_imageGoproBack, self.goproBackImagePath, self.goproColormap)
+            self.fromComputerButtonClicks += 1
         except TypeError:
             self.PB_fromCamera.setEnabled(True)
 
-    def display_noise_data(self):
-        self.noiseDataPath = self.ask_open_filename('Choose Noise File')
-        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
-        self.PB_mergeData.setEnabled(True)
-        # self.display_data_to_label(self.LA_noiseData)
-
-    def ask_open_filename(self, windowTitle):
-        path = QFileDialog.getOpenFileName(self, windowTitle)
-        return path[0]
-
     def load_from_gopro(self):
         try:
-            # gpCam = GoProCamera.GoPro(constants.auth)
-            # cameraDir = gpCam.getMediaFusion()
-            # mediaInfo = gpCam.getMediaInfo(')
-            # print(mediaInfo)
-            cameraDir = ['http://10.5.5.9/videos/DCIM/100GBACK/GPFR0010.JPG',
-                         'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
-            cameraDir[0] = cameraDir[0][0:37]
-            cameraDir[1] = cameraDir[1][0:38]
-            print(cameraDir)
-
-            # cameraFile = []
-            cameraFile = [['100GBACK', 'GPBK0001.MP4', '207900848', '1518187858'],
-                          ['100GBACK', 'GPBK0002.MP4', '75187863', '1518188764'],
-                          ['100GBACK', 'GPBK0006.JPG', '2809450', '1518271226'],
-                          ['100GBACK', 'GPBK0007.MP4', '1835045', '1518874876'],
-                          ['100GBACK', 'GPBK0008.MP4', '873464', '1518884630'],
-                          ['100GBACK', 'GPBK0009.MP4', '151566930', '1518885188'],
-                          ['100GBACK', 'GPBK0010.JPG', '3054955', '1518885454']]
-            #
-            # for file in self.get_online_file(cameraDir[1]):
-            #     cameraFile.append(cameraDir[1][0:15] +  file)
-            #
-            #
-            # print(cameraFile)
-
-            self.selectGoproFile = SelectGoproFile(cameraFile)
-            self.selectGoproFile.exec_()
-            imageFileName =  self.selectGoproFile.fileName
-            print(imageFileName)
+            self.get_gopro_content()
+            print(self.goproFrontImagePath, self.goproBackImagePath)
+            self.fromCameraButtonClicks += 1
 
         except AttributeError:
             self.PB_fromCamera.setEnabled(False)
             self.load_from_computer()
 
-    def get_online_file(self, url):
+    def get_online_gopro_file(self, url):
         ext = '.JPG'
         page = requests.get(url).text
         soup = BeautifulSoup(page, 'html.parser')
         return [node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
+
+    def get_gopro_content(self):
+        # gpCam = GoProCamera.GoPro(constants.auth)
+        # cameraDir = gpCam.getMediaFusion()
+        cameraDir = ['http://10.5.5.9/videos/DCIM/100GBACK/GPBK0010.JPG',
+        'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+        cameraDir[0] = cameraDir[0][0:37]
+        cameraDir[1] = cameraDir[1][0:38]
+
+        # cameraFile = []
+        # for file in self.get_online_gopro_file(cameraDir[0]):
+        #     cameraFile.append(cameraDir[0][0:15] + file)
+
+        cameraFile = ['http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0006.JPG',
+        'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+        for i in range(len(cameraFile)):
+            cameraFile[i] = cameraFile[i][-8:]
+
+        self.selectGoproFile = SelectGoproFile(cameraFile)
+        self.selectGoproFile.exec_()
+        imageFileName = self.selectGoproFile.fileName
+
+        front = 'GPFR' + imageFileName
+        back = 'GPBK' + imageFileName
+        self.goproFrontImagePath = cameraDir[1] + front
+        self.goproBackImagePath = cameraDir[0] + back
+
+    def display_noise_data(self):
+        self.noiseDataPath = self.ask_open_filename('Choose Noise File')
+        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        self.loadNoiseFileButtonClicks += 1
+        self.enableMergeDataButton()
+        # self.display_data_to_label(self.LA_noiseData)
+
+    def enableMergeDataButton(self):
+        if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
+            if self.loadNoiseFileButtonClicks > 0:
+                self.PB_mergeData.setEnabled(True)
 
     def merge_data(self):
         self.mergeDataButtonClicks += 1

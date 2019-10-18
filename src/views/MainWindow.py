@@ -13,6 +13,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__()
         self.setupUi(self)
         self.MergeDataWidget = MergeDataWidget()
+        self.setWindowTitle('Beamformer')
         self.setCentralWidget(self.MergeDataWidget)
         self.connect_menu()
 
@@ -30,6 +31,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def chosen_colormap(self):
         choice = self.sender()
         colormap = choice.text()
+        print(colormap)
         self.MergeDataWidget.set_noise_colormap(colormap)
 
     def menu_help_docs(self):
