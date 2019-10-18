@@ -25,7 +25,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproColormap = 'gray'
         self.noiseDataColormap = 'gray'
         self.noiseDataPath = ''
-        self.goproImagePath = ''
+        self.goproFrontImagePath = ''
+        self.goproBackImagePath = ''
         self.mergeDataButtonClicks = 0
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
@@ -40,19 +41,21 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def load_from_computer(self):
         try:
-            self.goproImagePath = self.ask_open_filename()
-            self.display_image_to_label(self.LA_imageGopro, self.goproImagePath, self.goproColormap)
+            self.goproFrontImagePath = self.ask_open_filename('Choose front GoPro Image')
+            self.display_image_to_label(self.LA_imageGoproFront, self.goproFrontImagePath, self.goproColormap)
+            self.goproBackImagePath = self.ask_open_filename('Choose back GoPro Image')
+            self.display_image_to_label(self.LA_imageGoproBack, self.goproBackImagePath, self.goproColormap)
         except TypeError:
             self.PB_fromCamera.setEnabled(True)
 
     def display_noise_data(self):
-        self.noiseDataPath = self.ask_open_filename()
+        self.noiseDataPath = self.ask_open_filename('Choose Noise File')
         self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.PB_mergeData.setEnabled(True)
         # self.display_data_to_label(self.LA_noiseData)
 
-    def ask_open_filename(self):
-        path = QFileDialog.getOpenFileName()
+    def ask_open_filename(self, windowTitle):
+        path = QFileDialog.getOpenFileName(self, windowTitle)
         return path[0]
 
     def load_from_gopro(self):
