@@ -140,10 +140,21 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         return pixmap
 
     def display_data_to_label(self, myLabel, path, colormap):
-        file = open(path, 'r') # test avec fichier txt d'export
+        self.text_file_to_array(myLabel, path, colormap)
+
+    def text_file_to_array(self, myLabel, path, colormap):
+        file = open(path, 'r')
         fileLine = file.readlines()
-        print(fileLine[35:38])
+        noiseUnit = fileLine[34]
+        noiseData = self.remove_values_from_list(fileLine[37].split('\t'), '')
+        angleUnit = self.remove_values_from_list(fileLine[35].split('\t'), '')
+        del noiseData[1]
+        print(noiseUnit, angleUnit, noiseData)
         file.close()
+        # return array
+
+    def remove_values_from_list(self, mylist, val):
+        return [value for value in mylist if value != val]
 
     def image2gray(self, path):
         img = cv2.imread(path, 0)

@@ -285,3 +285,86 @@
 #
 # # Combine the result with the original image
 # result = cv2.addWeighted(image, 1, newwarp, 0.3, 0)
+############################################################################################
+# import sys
+# import time
+#
+# import numpy as np
+#
+# from matplotlib.backends.qt_compat import QtCore, QtWidgets, is_pyqt5
+# if is_pyqt5():
+#     from matplotlib.backends.backend_qt5agg import (
+#         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+# else:
+#     from matplotlib.backends.backend_qt4agg import (
+#         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+# from matplotlib.figure import Figure
+#
+#
+# class ApplicationWindow(QtWidgets.QMainWindow):
+#     def __init__(self):
+#         super().__init__()
+#         self._main = QtWidgets.QWidget()
+#         self.setCentralWidget(self._main)
+#         layout = QtWidgets.QVBoxLayout(self._main)
+#
+#         static_canvas = FigureCanvas(Figure(figsize=(5, 3)))
+#         layout.addWidget(static_canvas)
+#         self.addToolBar(NavigationToolbar(static_canvas, self))
+#
+#         dynamic_canvas = FigureCanvas(Figure(figsize=(5, 3)))
+#         layout.addWidget(dynamic_canvas)
+#         self.addToolBar(QtCore.Qt.BottomToolBarArea,
+#                         NavigationToolbar(dynamic_canvas, self))
+#
+#         self._static_ax = static_canvas.figure.subplots()
+#         t = np.linspace(0, 10, 501)
+#         self._static_ax.plot(t, np.tan(t), ".")
+#
+#         self._dynamic_ax = dynamic_canvas.figure.subplots()
+#         self._timer = dynamic_canvas.new_timer(
+#             100, [(self._update_canvas, (), {})])
+#         self._timer.start()
+#
+#     def _update_canvas(self):
+#         self._dynamic_ax.clear()
+#         t = np.linspace(0, 10, 101)
+#         # Shift the sinusoid as a function of time.
+#         self._dynamic_ax.plot(t, np.sin(t + time.time()))
+#         self._dynamic_ax.figure.canvas.draw()
+#
+#
+# if __name__ == "__main__":
+#     qapp = QtWidgets.QApplication(sys.argv)
+#     app = ApplicationWindow()
+#     app.show()
+#     qapp.exec_()
+#########################################################################################################################
+import matplotlib.pyplot as plt
+import re
+angle = ['0', '5', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '75', '80', '85', '90',
+ '95', '100', '105', '110', '115', '120', '125', '130', '135', '140', '145', '150', '155', '160', '165', '170', '175', '180',
+ '185', '190', '195', '200', '205', '210', '215', '220', '225', '230', '235', '240', '245', '250', '255', '260', '265',
+ '270', '275', '280', '285', '290', '295', '300', '305', '310', '315', '320', '325', '330', '335', '340', '345', '350', '355']
+
+noise = ['2,344911E-9', '2,394874E-9', '2,443849E-9', '2,461865E-9', '2,454746E-9', '2,400632E-9', '2,329486E-9',
+ '2,270706E-9', '2,213696E-9', '2,167525E-9', '2,131667E-9', '2,104676E-9', '2,085574E-9', '2,078431E-9', '2,081977E-9',
+ '2,097991E-9', '2,126019E-9', '2,168823E-9', '2,234748E-9', '2,271227E-9', '2,302079E-9', '2,295351E-9', '2,296223E-9',
+ '2,313133E-9', '2,322944E-9', '2,285312E-9', '2,239045E-9', '2,197718E-9', '2,172958E-9', '2,162947E-9', '2,166810E-9',
+ '2,181686E-9', '2,212798E-9', '2,256796E-9', '2,317660E-9', '2,385254E-9', '2,457013E-9', '2,523050E-9', '2,557685E-9',
+ '2,574982E-9', '2,527942E-9', '2,472196E-9', '2,395653E-9', '2,338517E-9', '2,282957E-9', '2,240279E-9', '2,204209E-9',
+ '2,177967E-9', '2,159014E-9', '2,144998E-9', '2,137425E-9', '2,135534E-9', '2,144636E-9', '2,165617E-9', '2,197930E-9',
+ '2,238379E-9', '2,285497E-9', '2,334890E-9', '2,379353E-9', '2,361550E-9', '2,309228E-9', '2,255983E-9', '2,215893E-9',
+ '2,189504E-9', '2,175088E-9', '2,170557E-9', '2,174410E-9', '2,179887E-9', '2,190837E-9', '2,210654E-9', '2,241688E-9',
+ '2,286977E-9']
+
+for i in range(len(angle)):
+    angle[i] = float(angle[i])
+    noise[i] = re.sub(',', '.', noise[i])
+    noise[i] = float(noise[i])
+
+fig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw=dict(projection='polar'))
+ax1.plot(angle, noise)
+ax2.plot(angle, noise)
+
+plt.show()
