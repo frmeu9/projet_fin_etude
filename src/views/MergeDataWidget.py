@@ -1,11 +1,11 @@
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QWidget, QFileDialog, QComboBox, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QFileDialog
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import uic, QtCore
 from scipy import signal
 from scipy.io import wavfile
 import scipy.fftpack as ff
-from goprocam import GoProCamera, constants
+# from goprocam import GoProCamera, constants
 from views.SelectGoproFile import SelectGoproFile
 from bs4 import BeautifulSoup
 from itertools import combinations
@@ -13,9 +13,9 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pylab
 import cv2
 import math
+import requests
 import os
 
 
@@ -42,7 +42,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.mergeDataButtonClicks = 0
 
         self.t1 = 0
-        self.t2 = 5
+        self.t2 = 20
         self.f1 = 100
         self.f2 = 2000
         self.Ar = None
@@ -53,6 +53,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
         self.PB_fromCamera.setEnabled(False)
+        self.SL_transparencyCmap.setEnabled(False)
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
@@ -120,7 +121,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def display_noise_data(self):
         script_dir = os.path.dirname(os.path.realpath(__file__))
-        print(script_dir)
         fs, sig = self.wav_file_open(script_dir)
         self.get_angle(fs, sig)
         self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
@@ -138,16 +138,16 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             Ls = np.size(sig, 0) / fs
             Time = np.arange(0, np.size(sig, 0), 1) / fs
 
-            sens = pd.read_excel(os.path.join(script_dir, "Supplements\Sensibilite_microphones.xlsx"), header=None)
-            sens = np.transpose(np.atleast_2d((sens.iloc[1:, 2].values).astype('float64')))
+            sens = pd.read_excel(os.path.join(script_dir, "Supplements/Sensibilite_microphones.xlsx"), header=None)
+            sens = np.transpose(np.atleast_2d(sens.iloc[1:, 2].values.astype('float64')))
             sig = np.transpose(sig) * sens
 
-            tmp = pd.read_excel(os.path.join(script_dir, "Supplements\Position_microphones.xlsx"), header=None)
+            tmp = pd.read_excel(os.path.join(script_dir, "Supplements/Position_microphones.xlsx"), header=None)
             Scale_Up = tmp.iloc[0, 3]
 
-            self.Aphi = (tmp.iloc[3:, 3].values).astype('float64')
-            self.Athe = (tmp.iloc[3:, 4].values).astype('float64')
-            self.Ar = Scale_Up * (tmp.iloc[3:, 2].values).astype('float64')
+            self.Aphi = tmp.iloc[3:, 3].values.astype('float64')
+            self.Athe = tmp.iloc[3:, 4].values.astype('float64')
+            self.Ar = Scale_Up * tmp.iloc[3:, 2].values.astype('float64')
 
             self.nbMic = len(self.Aphi)
 
@@ -181,12 +181,12 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         freq = np.concatenate(
             (np.atleast_2d(np.arange(0, fs / 2, 1)), np.atleast_2d(np.arange(fs / 2, 0, -1))), axis=1)
 
-        r_A = (12194 ** 2) * (freq ** 4) / (
-                (freq ** 2 + 20.6 ** 2) * ((freq ** 2 + 107.7 ** 2) * (freq ** 2 + 737.9 ** 2)) ** (0.5) * (
-                freq ** 2 + 12194 ** 2))
-        r_A_1000 = (12194 ** 2) * (1000 ** 4) / (
-                (1000 ** 2 + 20.6 ** 2) * ((1000 ** 2 + 107.7 ** 2) * (1000 ** 2 + 737.9 ** 2)) ** (0.5) * (
-                1000 ** 2 + 12194 ** 2))
+        r_A = (12194 ** 2) * (freq ** 4) / \
+              ((freq ** 2 + 20.6 ** 2) * ((freq ** 2 + 107.7 ** 2) *
+                                          (freq ** 2 + 737.9 ** 2)) ** 0.5 * (freq ** 2 + 12194 ** 2))
+        r_A_1000 = (12194 ** 2) * (1000 ** 4) / ((1000 ** 2 + 20.6 ** 2) * ((1000 ** 2 + 107.7 ** 2) *
+                                                                            (1000 ** 2 + 737.9 ** 2)) ** 0.5 *
+                                                 (1000 ** 2 + 12194 ** 2))
         r_A = r_A / r_A_1000
 
         # math.floor(Ls)
@@ -231,11 +231,16 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         outp = np.reshape(10 * np.log10(out_bf / 4e-10), (np.size(the, 1), np.size(phi, 1)))
         outp_max = 10 * np.log10(np.max(out_bf / 4e-10))
 
+        # lignes,colonnes = outp.shape
+        # for i in range(lignes):
+        #     for j in range(colonnes):
+        #         outp[i,j] = outp[i,j]/outp_max
+
 
         plt.pcolormesh(np.reshape(phi, np.size(phi, 1)), np.reshape(the, np.size(the, 1)),
                        outp - outp_max, cmap=self.noiseDataColormap)
         plt.axis('off')
-        plt.savefig('noise_angle',dpi=600, bbox_inches='tight')
+        plt.savefig('noise_angle', dpi=600, bbox_inches='tight', pad_inches=0)
 
     def enable_merge_mata_button(self):
         if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
@@ -246,6 +251,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.mergeDataButtonClicks += 1
         self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
         self.PB_saveAs.setEnabled(True)
+        self.SL_transparencyCmap.setEnabled(True)
 
     def save_final_image(self):
         imgGray = self.image2gray(self.noiseDataPath)

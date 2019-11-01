@@ -21,7 +21,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.MN_file_exit.triggered.connect(self.exit_main_window)
         self.MN_options_colormap_viridis.triggered.connect(self.chosen_colormap)
         self.MN_options_colormap_magma.triggered.connect(self.chosen_colormap)
-        self.MN_options_colormap_gray.triggered.connect(self.chosen_colormap)
         self.MN_help_documentations.triggered.connect(self.menu_help_docs)
         self.MN_help_acknowledgement.triggered.connect(self.menu_help_acknow)
 

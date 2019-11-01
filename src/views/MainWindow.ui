@@ -47,7 +47,6 @@
      </property>
      <addaction name="MN_options_colormap_viridis"/>
      <addaction name="MN_options_colormap_magma"/>
-     <addaction name="MN_options_colormap_gray"/>
     </widget>
     <addaction name="menuColormap"/>
    </widget>
