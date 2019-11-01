@@ -30,7 +30,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.connect_button()
 
         self.goproColormap = 'gray'
-        self.noiseDataColormap = 'gray'
+        self.noiseDataColormap = 'viridis'
 
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
@@ -48,7 +48,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.Ar = None
         self.Athe = None
         self.Aphi = None
-        self.Nbmic = None
+        self.nbMic = None
 
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
@@ -72,6 +72,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.goproBackImagePath = self.ask_open_filename('Choose back GoPro Image')
             self.display_image_to_label(self.LA_imageGoproBack, self.goproBackImagePath, self.goproColormap)
             self.fromComputerButtonClicks += 1
+            self.enable_merge_mata_button()
         except TypeError:
             self.PB_fromCamera.setEnabled(True)
 
@@ -80,7 +81,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.get_gopro_content()
             print(self.goproFrontImagePath, self.goproBackImagePath)
             self.fromCameraButtonClicks += 1
-
+            self.enable_merge_mata_button()
         except AttributeError:
             self.PB_fromCamera.setEnabled(False)
             self.load_from_computer()
@@ -95,7 +96,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         # gpCam = GoProCamera.GoPro(constants.auth)
         # cameraDir = gpCam.getMediaFusion()
         cameraDir = ['http://10.5.5.9/videos/DCIM/100GBACK/GPBK0010.JPG',
-                    'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+                     'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
         cameraDir[0] = cameraDir[0][0:37]
         cameraDir[1] = cameraDir[1][0:38]
 
@@ -104,7 +105,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         #     cameraFile.append(cameraDir[0][0:15] + file)
 
         cameraFile = ['http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0006.JPG',
-                    'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+                      'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
         for i in range(len(cameraFile)):
             cameraFile[i] = cameraFile[i][-8:]
 
@@ -130,7 +131,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def wav_file_open(self, script_dir):
         # Fonction tirée du script Beamforming3D de Soft dB
         fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open File', os.path.expanduser("~/Desktop"),
-                                                              'Wave Files (*.wav)')
+                                                         'Wave Files (*.wav)')
 
         if fname != '':
             fs, sig = wavfile.read(fname)
@@ -148,7 +149,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.Athe = (tmp.iloc[3:, 4].values).astype('float64')
             self.Ar = Scale_Up * (tmp.iloc[3:, 2].values).astype('float64')
 
-            self.Nbmic = len(self.Aphi)
+            self.nbMic = len(self.Aphi)
 
             return fs, sig
 
@@ -161,7 +162,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         Ay = self.Ar * np.cos(np.deg2rad(self.Athe)) * np.sin(np.deg2rad(self.Aphi))
         Az = self.Ar * np.sin(np.deg2rad(self.Athe))
 
-        comb = np.array(list(combinations(np.arange(self.Nbmic), 2)))
+        comb = np.array(list(combinations(np.arange(self.nbMic), 2)))
 
         # Scan zone
         phi = np.atleast_2d(np.arange(-180, 181, 1))
@@ -190,15 +191,15 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
         # math.floor(Ls)
 
-        signal_gl = np.zeros((self.Nbmic, np.size(P, 1)))
+        signal_gl = np.zeros((self.nbMic, np.size(P, 1)))
         b, a = signal.butter(2, np.array([self.f1, self.f2]) / fs * 2, btype='bandpass')
 
-        for imic1 in np.arange(self.Nbmic):
+        for imic1 in np.arange(self.nbMic):
             signal_gl[imic1, :] = signal.filtfilt(b, a, np.atleast_2d(P[imic1, :]))
 
-        fft_pp = np.zeros((self.Nbmic, Nfft), dtype=complex)
-        Pp = np.zeros((self.Nbmic, Nfft))
-        for uu in np.arange(self.Nbmic):
+        fft_pp = np.zeros((self.nbMic, Nfft), dtype=complex)
+        Pp = np.zeros((self.nbMic, Nfft))
+        for uu in np.arange(self.nbMic):
             # if self.pondA.isChecked():
             # Pour avoir les données en dBA
             fft_pp[uu, :] = ff.fft(np.atleast_2d(signal_gl[uu, :]), n=Nfft) * r_A
@@ -232,7 +233,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
 
         plt.pcolormesh(np.reshape(phi, np.size(phi, 1)), np.reshape(the, np.size(the, 1)),
-                                             outp - outp_max, cmap=self.noiseDataColormap)
+                       outp - outp_max, cmap=self.noiseDataColormap)
         plt.axis('off')
         plt.savefig('noise_angle',dpi=600, bbox_inches='tight')
 
@@ -243,7 +244,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def merge_data(self):
         self.mergeDataButtonClicks += 1
-        # self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
         self.PB_saveAs.setEnabled(True)
 
     def save_final_image(self):
@@ -279,7 +280,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def set_noise_colormap(self, colormap):
         self.noiseDataColormap = colormap
         if self.noiseDataPath != '':
-            if self.mergeDataButtonClicks > 0:
-                pass
-                # self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
             self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+            if self.mergeDataButtonClicks > 0:
+                self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
