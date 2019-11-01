@@ -481,33 +481,33 @@ class Ui_MainWindow(object):
     def quit_app(self):
         sys.exit()
         
-    def file_open(self):
+    def file_open(self, script_dir):
         
-        self.reinit_bouton()
+        # self.reinit_bouton()
         
         self.fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open File',os.path.expanduser("~/Desktop"),'Wave Files (*.wav)')
         
         if self.fname!='':
-            self.open_button.setStyleSheet("background-color: green")
+            # self.open_button.setStyleSheet("background-color: green")
             self.fs, self.sig = wavfile.read(self.fname)
             self.Ls = np.size(self.sig,0)/self.fs
             Time = np.arange(0,np.size(self.sig,0),1)/self.fs
         
-            sens = pd.read_excel(os.path.join(self.script_dir,"Supplements\Sensibilite_microphones.xlsx"),header=None)
+            sens = pd.read_excel(os.path.join(script_dir,"Supplements\Sensibilite_microphones.xlsx"),header=None)
             sens = np.transpose(np.atleast_2d((sens.iloc[1:,2].values).astype('float64')))
             self.sig = np.transpose(self.sig)*sens
             
-            self.plot_time.canvas_time.axes_time.clear()
-            self.plot_time.canvas_time.axes_time.plot(Time,self.sig[0,]) 
-#            self.plot_time.canvas_time.axes_time.set_in_layout(True)
-            self.plot_time.canvas_time.axes_time.set_xlabel('Time [s]')
-            self.plot_time.canvas_time.axes_time.set_ylabel('p [Pa]')
-            self.plot_time.canvas_time.axes_time.grid()
-            self.cursor = Cursor(self.plot_time.canvas_time.axes_time, useblit=True, color='k', linewidth=1)
-            self.plot_t1t2()
-            self.plot_time.canvas_time.draw()
+#             self.plot_time.canvas_time.axes_time.clear()
+#             self.plot_time.canvas_time.axes_time.plot(Time,self.sig[0,])
+# #            self.plot_time.canvas_time.axes_time.set_in_layout(True)
+#             self.plot_time.canvas_time.axes_time.set_xlabel('Time [s]')
+#             self.plot_time.canvas_time.axes_time.set_ylabel('p [Pa]')
+#             self.plot_time.canvas_time.axes_time.grid()
+#             self.cursor = Cursor(self.plot_time.canvas_time.axes_time, useblit=True, color='k', linewidth=1)
+#             self.plot_t1t2()
+#             self.plot_time.canvas_time.draw()
             
-            tmp = pd.read_excel(os.path.join(self.script_dir,"Supplements\Position_microphones.xlsx"),header=None)
+            tmp = pd.read_excel(os.path.join(script_dir,"Supplements\Position_microphones.xlsx"),header=None)
             self.Scale_Up = tmp.iloc[0,3]
             
             self.Aphi = (tmp.iloc[3:,3].values).astype('float64')
@@ -516,11 +516,12 @@ class Ui_MainWindow(object):
             
             self.Nbmic = len(self.Aphi)
             
-            self.in_f1.setMaximum(np.round(self.fs/2)-2)
-            self.in_f2.setMaximum(np.round(self.fs/2)-1)
-            
+            # self.in_f1.setMaximum(np.round(self.fs/2)-2)
+            # self.in_f2.setMaximum(np.round(self.fs/2)-1)
+            return self.fs, self.sig
         else:
-            self.open_button.setStyleSheet("background-color: red")
+            # self.open_button.setStyleSheet("background-color: red")
+            pass
     
     def tracer(self):
         

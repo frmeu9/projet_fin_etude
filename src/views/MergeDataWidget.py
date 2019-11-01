@@ -5,7 +5,6 @@ from matplotlib import cm
 from goprocam import GoProCamera, constants
 from views.SelectGoproFile import SelectGoproFile
 from views.wavReader import Beamforming3D
-from Beamforming3D import Ui
 import cv2
 import os
 from bs4 import BeautifulSoup
@@ -24,6 +23,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
         self.goproColormap = 'gray'
         self.noiseDataColormap = 'gray'
+
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
         self.goproBackImagePath = ''
@@ -101,9 +101,12 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproBackImagePath = cameraDir[0] + back
 
     def display_noise_data(self):
-        self.noiseDataPath = self.ask_open_filename('Choose Noise File')
+        # self.noiseDataPath = self.ask_open_filename('Choose Noise File')
+        beam = Beamforming3D.Ui_MainWindow()
+        script_dir = os.path.dirname(os.path.realpath(__file__)) + "\wavReader"
+        fs, signal = beam.file_open(script_dir)
         # self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
-        # self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        self.display_data_to_label(self.LA_noiseData, signal, self.noiseDataColormap)
         self.loadNoiseFileButtonClicks += 1
         self.enable_merge_mata_button()
 
@@ -114,7 +117,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def merge_data(self):
         self.mergeDataButtonClicks += 1
-        # self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.PB_saveAs.setEnabled(True)
 
@@ -137,9 +139,14 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         myLabel.setPixmap(pixmapScaled)
         return pixmap
 
-    def display_data_to_label(self, myLabel, path, colormap):
-        # self.text_file_to_array(myLabel, path, colormap)
-        pass
+    def display_data_to_label(self, myLabel, data, colormap):
+        pixmap = self.array2pixmap(data, colormap)
+        width = myLabel.frameGeometry().width()
+        height = myLabel.frameGeometry().height()
+        pixmapScaled = pixmap.scaled(height, width, QtCore.Qt.KeepAspectRatio)
+        myLabel.setAlignment(QtCore.Qt.AlignCenter)
+        myLabel.setPixmap(pixmapScaled)
+        return pixmap
 
     def image2gray(self, path):
         img = cv2.imread(path, 0)

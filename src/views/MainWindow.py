@@ -31,7 +31,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def chosen_colormap(self):
         choice = self.sender()
         colormap = choice.text()
-        print(colormap)
         self.MergeDataWidget.set_noise_colormap(colormap)
 
     def menu_help_docs(self):
