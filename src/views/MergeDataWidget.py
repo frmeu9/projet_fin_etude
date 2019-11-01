@@ -102,13 +102,19 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def display_noise_data(self):
         # self.noiseDataPath = self.ask_open_filename('Choose Noise File')
+        noiseData = self.get_angle()
+        # self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        self.display_data_to_label(self.LA_noiseData, noiseData, self.noiseDataColormap)
+        self.loadNoiseFileButtonClicks += 1
+        self.enable_merge_mata_button()
+
+    def get_angle(self):
         beam = Beamforming3D.Ui_MainWindow()
         script_dir = os.path.dirname(os.path.realpath(__file__)) + "\wavReader"
         fs, signal = beam.file_open(script_dir)
-        # self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
-        self.display_data_to_label(self.LA_noiseData, signal, self.noiseDataColormap)
-        self.loadNoiseFileButtonClicks += 1
-        self.enable_merge_mata_button()
+
+        return noiseAngle
+
 
     def enable_merge_mata_button(self):
         if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
