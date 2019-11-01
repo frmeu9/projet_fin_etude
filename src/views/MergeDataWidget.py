@@ -30,7 +30,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.connect_button()
 
         self.goproColormap = 'gray'
-        self.noiseDataColormap = 'viridis'
+        self.noiseDataColormap = 'gray'
 
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
@@ -122,8 +122,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         print(script_dir)
         fs, sig = self.wav_file_open(script_dir)
         self.get_angle(fs, sig)
-        path = script_dir[:-5] + 'noise_angle.png'
-        self.display_image_to_label(self.LA_noiseData, path, self.noiseDataColormap)
+        self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
+        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.loadNoiseFileButtonClicks += 1
         self.enable_merge_mata_button()
 
