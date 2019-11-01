@@ -10,8 +10,10 @@ from views.SelectGoproFile import SelectGoproFile
 from bs4 import BeautifulSoup
 from itertools import combinations
 from matplotlib import cm
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pylab
 import cv2
 import math
 import os
@@ -28,7 +30,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.connect_button()
 
         self.goproColormap = 'gray'
-        self.noiseDataColormap = 'gray'
+        self.noiseDataColormap = 'viridis'
 
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
@@ -117,10 +119,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def display_noise_data(self):
         script_dir = os.path.dirname(os.path.realpath(__file__))
+        print(script_dir)
         fs, sig = self.wav_file_open(script_dir)
-        print(fs, sig)
         self.get_angle(fs, sig)
-        # self.display_data_to_label(self.LA_noiseData, noiseData, self.noiseDataColormap)
+        path = script_dir[:-5] + 'noise_angle.png'
+        self.display_image_to_label(self.LA_noiseData, path, self.noiseDataColormap)
         self.loadNoiseFileButtonClicks += 1
         self.enable_merge_mata_button()
 
@@ -227,23 +230,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         outp = np.reshape(10 * np.log10(out_bf / 4e-10), (np.size(the, 1), np.size(phi, 1)))
         outp_max = 10 * np.log10(np.max(out_bf / 4e-10))
 
-        cc2 = 0
-        cc1 = -1
 
-
-
-        # self.plot_bf.canvas.axes.clear()
-        # self.plot_bf.canvas.axes.pcolormesh(np.reshape(phi, np.size(phi, 1)), np.reshape(the, np.size(the, 1)),
-        #                                     outp - outp_max, cmap=plt.cm.hot_r, vmin=cc1, vmax=cc2,
-        #                                     shading='gouraud')
-        # if self.pondA.isChecked():
-        #     self.plot_bf.canvas.axes.set_title(str(np.round(outp_max, decimals=1)) + " dBA")
-        # else:
-        #     self.plot_bf.canvas.axes.set_title(str(np.round(outp_max, decimals=1)) + " dB")
-        #
-        # self.plot_bf.canvas.axes.set_xlabel('$\phi$')
-        # self.plot_bf.canvas.axes.set_ylabel(r'$\theta$')
-        # self.plot_bf.canvas.draw()
+        plt.pcolormesh(np.reshape(phi, np.size(phi, 1)), np.reshape(the, np.size(the, 1)),
+                                             outp - outp_max, cmap=self.noiseDataColormap)
+        plt.axis('off')
+        plt.savefig('noise_angle',dpi=600, bbox_inches='tight')
 
     def enable_merge_mata_button(self):
         if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
@@ -252,7 +243,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def merge_data(self):
         self.mergeDataButtonClicks += 1
-        self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        # self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.PB_saveAs.setEnabled(True)
 
     def save_final_image(self):
@@ -267,15 +258,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def display_image_to_label(self, myLabel, path, colormap):
         imgGray = self.image2gray(path)
         pixmap = self.array2pixmap(imgGray, colormap)
-        width = myLabel.frameGeometry().width()
-        height = myLabel.frameGeometry().height()
-        pixmapScaled = pixmap.scaled(height, width, QtCore.Qt.KeepAspectRatio)
-        myLabel.setAlignment(QtCore.Qt.AlignCenter)
-        myLabel.setPixmap(pixmapScaled)
-        return pixmap
-
-    def display_data_to_label(self, myLabel, data, colormap):
-        pixmap = self.array2pixmap(data, colormap)
         width = myLabel.frameGeometry().width()
         height = myLabel.frameGeometry().height()
         pixmapScaled = pixmap.scaled(height, width, QtCore.Qt.KeepAspectRatio)
@@ -298,5 +280,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.noiseDataColormap = colormap
         if self.noiseDataPath != '':
             if self.mergeDataButtonClicks > 0:
-                self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
+                pass
+                # self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
             self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
