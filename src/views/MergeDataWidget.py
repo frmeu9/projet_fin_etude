@@ -2,17 +2,15 @@ from PyQt5.QtWidgets import QWidget, QFileDialog, QComboBox, QHBoxLayout
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import uic, QtCore
 from matplotlib import cm
-import urllib.request
-# import matplotlib.pyplot as plt
-# import numpy as np
-# import matplotlib.image as mpimg
 from goprocam import GoProCamera, constants
 from views.SelectGoproFile import SelectGoproFile
+from views.wavReader import Beamforming3D
+from Beamforming3D import Ui
 import cv2
 import os
 from bs4 import BeautifulSoup
 import requests
-# import pandas
+
 
 MergeDataWidgetPath = os.path.dirname(os.path.realpath(__file__)) + '\\MergeDataWidget.ui'
 Ui_MergeDataWidget, QtBaseClass = uic.loadUiType(MergeDataWidgetPath)
@@ -80,7 +78,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         # gpCam = GoProCamera.GoPro(constants.auth)
         # cameraDir = gpCam.getMediaFusion()
         cameraDir = ['http://10.5.5.9/videos/DCIM/100GBACK/GPBK0010.JPG',
-        'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+                    'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
         cameraDir[0] = cameraDir[0][0:37]
         cameraDir[1] = cameraDir[1][0:38]
 
@@ -89,7 +87,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         #     cameraFile.append(cameraDir[0][0:15] + file)
 
         cameraFile = ['http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0006.JPG',
-        'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+                    'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
         for i in range(len(cameraFile)):
             cameraFile[i] = cameraFile[i][-8:]
 
@@ -105,7 +103,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def display_noise_data(self):
         self.noiseDataPath = self.ask_open_filename('Choose Noise File')
         # self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
-        self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+        # self.display_data_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.loadNoiseFileButtonClicks += 1
         self.enable_merge_mata_button()
 
@@ -140,21 +138,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         return pixmap
 
     def display_data_to_label(self, myLabel, path, colormap):
-        self.text_file_to_array(myLabel, path, colormap)
-
-    def text_file_to_array(self, myLabel, path, colormap):
-        file = open(path, 'r')
-        fileLine = file.readlines()
-        noiseUnit = fileLine[34]
-        noiseData = self.remove_values_from_list(fileLine[37].split('\t'), '')
-        angleUnit = self.remove_values_from_list(fileLine[35].split('\t'), '')
-        del noiseData[1]
-        print(noiseUnit, angleUnit, noiseData)
-        file.close()
-        # return array
-
-    def remove_values_from_list(self, mylist, val):
-        return [value for value in mylist if value != val]
+        # self.text_file_to_array(myLabel, path, colormap)
+        pass
 
     def image2gray(self, path):
         img = cv2.imread(path, 0)
