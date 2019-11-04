@@ -5,7 +5,7 @@ from PyQt5 import uic, QtCore
 from scipy import signal
 from scipy.io import wavfile
 import scipy.fftpack as ff
-# from goprocam import GoProCamera, constants
+from goprocam import GoProCamera, constants
 from views.SelectGoproFile import SelectGoproFile
 from bs4 import BeautifulSoup
 from itertools import combinations
@@ -70,7 +70,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         try:
             self.goproFrontImagePath = self.ask_open_filename('Choose front GoPro Image')
             self.display_image_to_label(self.LA_imageGoproFront, self.goproFrontImagePath, self.goproColormap)
-            self.goproBackImagePath = self.ask_open_filename('Choose back GoPro Image')
+            self.goproBackImagePath = self.goproFrontImagePath.replace('GPFR', 'GPBK')
+            # self.goproBackImagePath = self.ask_open_filename('Choose back GoPro Image')
             self.display_image_to_label(self.LA_imageGoproBack, self.goproBackImagePath, self.goproColormap)
             self.fromComputerButtonClicks += 1
             self.enable_merge_mata_button()
@@ -124,6 +125,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         fs, sig = self.wav_file_open(script_dir)
         self.get_angle(fs, sig)
         self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
+        self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
+        # print(self.noiseDataPath)
         self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.loadNoiseFileButtonClicks += 1
         self.enable_merge_mata_button()
@@ -240,7 +243,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         plt.pcolormesh(np.reshape(phi, np.size(phi, 1)), np.reshape(the, np.size(the, 1)),
                        outp - outp_max, cmap=self.noiseDataColormap)
         plt.axis('off')
-        plt.savefig('noise_angle', dpi=600, bbox_inches='tight', pad_inches=0)
+        plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0)
 
     def enable_merge_mata_button(self):
         if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
@@ -274,6 +277,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def image2gray(self, path):
         img = cv2.imread(path, 0)
+        # print(path)
+        # print(img)
         return img
 
     def array2pixmap(self, array, colormap):
