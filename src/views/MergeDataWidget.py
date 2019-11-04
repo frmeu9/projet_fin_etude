@@ -26,6 +26,7 @@ Ui_MergeDataWidget, QtBaseClass = uic.loadUiType(MergeDataWidgetPath)
 class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def __init__(self):
         super(MergeDataWidget, self).__init__()
+
         self.setupUi(self)
         self.connect_button()
 
@@ -35,6 +36,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
         self.goproBackImagePath = ''
+        self.finalImagePath = ''
 
         self.fromComputerButtonClicks = 0
         self.fromCameraButtonClicks = 0
@@ -42,7 +44,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.mergeDataButtonClicks = 0
 
         self.t1 = 0
-        self.t2 = 20
+        self.t2 = 2
         self.f1 = 100
         self.f2 = 2000
         self.Ar = None
@@ -62,10 +64,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
 
-    def ask_open_filename(self, windowTitle):
-        path = QFileDialog.getOpenFileName(self, windowTitle)
-        return path[0]
-
     def load_from_computer(self):
         try:
             self.goproFrontImagePath = self.ask_open_filename('Choose front GoPro Image')
@@ -77,6 +75,10 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.enable_merge_mata_button()
         except TypeError:
             self.PB_fromCamera.setEnabled(True)
+
+    def ask_open_filename(self, windowTitle):
+        path = QFileDialog.getOpenFileName(self, windowTitle)
+        return path[0]
 
     def load_from_gopro(self):
         try:
@@ -126,7 +128,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.get_angle(fs, sig)
         self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
         self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
-        # print(self.noiseDataPath)
         self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
         self.loadNoiseFileButtonClicks += 1
         self.enable_merge_mata_button()
@@ -245,26 +246,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         plt.axis('off')
         plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0)
 
-    def enable_merge_mata_button(self):
-        if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
-            if self.loadNoiseFileButtonClicks > 0:
-                self.PB_mergeData.setEnabled(True)
-
-    def merge_data(self):
-        self.mergeDataButtonClicks += 1
-        self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
-        self.PB_saveAs.setEnabled(True)
-        self.SL_transparencyCmap.setEnabled(True)
-
-    def save_final_image(self):
-        imgGray = self.image2gray(self.noiseDataPath)
-        finalImagePixmap = self.array2pixmap(imgGray, self.noiseDataColormap)
-        self.save_data(finalImagePixmap)
-
-    def save_data(self, imageToSave):
-        fileName = QFileDialog.getSaveFileName(self, 'Save File', 'finalImage', '*.png')
-        imageToSave.save(fileName[0], 'png')
-
     def display_image_to_label(self, myLabel, path, colormap):
         imgGray = self.image2gray(path)
         pixmap = self.array2pixmap(imgGray, colormap)
@@ -277,14 +258,12 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def image2gray(self, path):
         img = cv2.imread(path, 0)
-        # print(path)
-        # print(img)
         return img
 
     def array2pixmap(self, array, colormap):
         sm = cm.ScalarMappable(cmap=colormap)
         rgbImage = sm.to_rgba(array, bytes=True, norm=False)
-        qImg = QImage(rgbImage, rgbImage.shape[1], rgbImage.shape[0], rgbImage.shape[1]*4, QImage.Format_RGBA8888)
+        qImg = QImage(rgbImage, rgbImage.shape[1], rgbImage.shape[0], rgbImage.shape[1] * 4, QImage.Format_RGBA8888)
         pix = QPixmap(qImg)
         return pix
 
@@ -294,3 +273,51 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
             if self.mergeDataButtonClicks > 0:
                 self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
+
+    def enable_merge_mata_button(self):
+        if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
+            if self.loadNoiseFileButtonClicks > 0:
+                self.PB_mergeData.setEnabled(True)
+
+    def merge_data(self):
+        self.mergeDataButtonClicks += 1
+        undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath)
+        undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath)
+        # combinedGoproImage = self.combine_gopro_image(undistortBackImage, undistortFrontImage)
+        # finalImage = self.create_gopro_noise_image(combinedGoproImage, [])
+        # self.display_image_to_label(self.LA_finalImage, self.finalImagePath, self.noiseDataColormap)
+        self.PB_saveAs.setEnabled(True)
+        self.SL_transparencyCmap.setEnabled(True)
+
+    def undistort_gopro_image(self, path):
+        K = np.array([[1230, 0., 3104/2],
+                      [0., 1230, 3000/2],
+                      [0., 0., 1.]])
+
+        # zero distortion coefficients work well for this image
+        D = np.array([-0.32, -0.126, 0, 0])
+
+        # use Knew to scale the output
+        # Knew = K.copy()
+        # Knew[(0, 1), (0, 1)] = 0.2 * Knew[(0, 1), (0, 1)]
+
+        img = self.image2gray(path)
+        # dimensions de l'image: 3000 x 3104
+        img_undistorted = cv2.fisheye.undistortImage(img, K, D=D)
+        cv2.imshow('undistorted', img_undistorted)
+        return img_undistorted
+
+    def combine_gopro_image(self, backImg, frontImg):
+        return 0
+
+    def create_gopro_noise_image(self, combinedGoproImage, noise):
+        return 0
+
+    def save_final_image(self):
+        imgGray = self.image2gray(self.noiseDataPath)
+        finalImagePixmap = self.array2pixmap(imgGray, self.noiseDataColormap)
+        self.save_data(finalImagePixmap)
+
+    def save_data(self, imageToSave):
+        fileName = QFileDialog.getSaveFileName(self, 'Save File', 'finalImage', '*.png')
+        imageToSave.save(fileName[0], 'png')
