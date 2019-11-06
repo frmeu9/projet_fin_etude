@@ -43,8 +43,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.loadNoiseFileButtonClicks = 0
         self.mergeDataButtonClicks = 0
 
-        self.t1 = 0
-        self.t2 = 2
+        self.t1 = 30
+        self.t2 = 32
         self.f1 = 100
         self.f2 = 2000
         self.Ar = None
