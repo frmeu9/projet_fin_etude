@@ -250,7 +250,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         pixmapScaled = pixmap.scaled(height, width, QtCore.Qt.KeepAspectRatio)
         myLabel.setAlignment(QtCore.Qt.AlignCenter)
         myLabel.setPixmap(pixmapScaled)
-        return pixmap
 
     def image2gray(self, path):
         img = cv2.imread(path, 0)
@@ -267,8 +266,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.noiseDataColormap = colormap
         if self.noiseDataPath != '':
             self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
-            if self.mergeDataButtonClicks > 0:
-                self.display_image_to_label(self.LA_finalImage, self.noiseDataPath, self.noiseDataColormap)
 
     def enable_merge_mata_button(self):
         if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
@@ -279,9 +276,9 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.mergeDataButtonClicks += 1
         undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
         undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
-        combinedGoproImage = self.combine_gopro_image(undistortBackImage, undistortFrontImage)
-        self.create_gopro_noise_image(combinedGoproImage)
-        self.display_image_to_label(self.LA_finalImage, self.finalImagePath, self.noiseDataColormap)
+        self.combine_gopro_image(undistortBackImage, undistortFrontImage)
+        self.overlay_gopro_noise()
+        self.display_image_to_label(self.LA_finalImage, self.finalImagePath, None)
         self.PB_saveAs.setEnabled(True)
         self.SL_transparencyCmap.setEnabled(True)
 
@@ -323,28 +320,59 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
 
         imgUndistorted = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-        # imgResized = cv2.resize(imgUndistorted, (1552, 1500))  # Resize image
+        imgResized = cv2.resize(imgUndistorted, (369, 496))  # Resize image
         # cv2.imshow("output", imgResized)
         # cv2.imshow('Image undistorted', imgUndistorted)
         # cv2.waitKey(0)
 
-        return imgUndistorted
+        return imgResized
 
     def combine_gopro_image(self, backImg, frontImg):
         finalImage = np.hstack((frontImg, backImg))
-        return finalImage
-
-    def create_gopro_noise_image(self, combinedGoproImage, noise= None):
         script_dir = os.path.dirname(os.path.realpath(__file__))
         self.finalImagePath = script_dir[:-5] + 'final_image.png'
         self.finalImagePath = self.finalImagePath.replace(os.sep, '/')
-        cv2.imwrite(self.finalImagePath, combinedGoproImage)
+        cv2.imwrite(self.finalImagePath, finalImage)
 
-        return combinedGoproImage
+    def overlay_gopro_noise(self):
+        noiseMap = cv2.imread(self.noiseDataPath)
+        cv2.imshow('', noiseMap)
+        h, w, n = noiseMap.shape
+        noiseMap = np.uint8(noiseMap)
+
+        stitchedImage = cv2.imread(self.finalImagePath)
+        cv2.imshow('', stitchedImage)
+        stitchedImage = np.uint8(stitchedImage)
+        hMax, wMax, nMax = stitchedImage.shape
+
+        noiseMapSized = np.zeros((hMax,wMax))
+
+        print(noiseMap.shape, type(noiseMap[5,5,1])) # grayscale, 3D matrix, uint8
+        print(stitchedImage.shape, type(stitchedImage[5,5,1])) # grayscale, 2D matrix, uint8
+
+        for i in range(h):
+            for j in range(w):
+                noiseMapSized[i,j] += noiseMap[i,j,1]
+
+        noiseMapSized = np.uint8(noiseMapSized)
+        print(noiseMapSized.shape, type(noiseMapSized[5,5])) # 2D matrix, uint8
+
+        if self.noiseDataColormap == 'viridis':
+            noiseMapSized = cv2.applyColorMap(noiseMapSized, cv2.COLORMAP_VIRIDIS)
+        else:
+            noiseMapSized = cv2.applyColorMap(noiseMapSized, cv2.COLORMAP_MAGMA)
+
+        print(noiseMapSized.shape, type(noiseMapSized))  # 3D matrix, uint8
+        finalImage = cv2.addWeighted(stitchedImage, 1, noiseMapSized, 0.2, 0, dtype=1)
+
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        self.finalImagePath = script_dir[:-5] + 'final_image.png'
+        self.finalImagePath = self.finalImagePath.replace(os.sep, '/')
+        cv2.imwrite(self.finalImagePath, finalImage)
 
     def save_final_image(self):
         imgGray = self.image2gray(self.finalImagePath)
-        finalImagePixmap = self.array2pixmap(imgGray, self.noiseDataColormap)
+        finalImagePixmap = self.array2pixmap(imgGray, None)
         self.save_data(finalImagePixmap)
 
     def save_data(self, imageToSave):
