@@ -1,8 +1,12 @@
 import cv2
-assert cv2.__version__[0] == '3', 'The fisheye module requires opencv version >= 3.0.0'
+# assert cv2.__version__[0] == '3', 'The fisheye module requires opencv version >= 3.0.0'
 import numpy as np
 import os
 import glob
+
+# Script tiré de la page web
+# https://medium.com/@kennethjiang/calibrate-fisheye-lens-using-opencv-333b05afa0b0
+
 CHECKERBOARD = (6,9)
 subpix_criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
 calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_CHECK_COND+cv2.fisheye.CALIB_FIX_SKEW
