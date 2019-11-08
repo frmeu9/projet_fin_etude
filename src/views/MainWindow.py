@@ -36,9 +36,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Question)
         msgBox.setText("How this software works: \n"
-                       "1. Load a 360 photo, from computer or from camera. \n"
-                       "2. Load noise file from computer. \n"
-                       "3. Merge data: The software will layout the noise data to the 360 photo. \n")
+                       "1. Ensure that both back and front GoPro image are in the same folder. \n"
+                       "2. Locate the .wav file. \n"
+                       "3. Load GoPro images and noise file. \n")
         msgBox.setWindowTitle("Documentations")
         msgBox.exec_()
 

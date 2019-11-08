@@ -17,6 +17,8 @@ import cv2
 import math
 import requests
 import os
+import glob
+
 
 
 MergeDataWidgetPath = os.path.dirname(os.path.realpath(__file__)) + '\\MergeDataWidget.ui'
@@ -235,12 +237,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         outp = np.reshape(10 * np.log10(out_bf / 4e-10), (np.size(the, 1), np.size(phi, 1)))
         outp_max = 10 * np.log10(np.max(out_bf / 4e-10))
 
-        # lignes,colonnes = outp.shape
-        # for i in range(lignes):
-        #     for j in range(colonnes):
-        #         outp[i,j] = outp[i,j]/outp_max
-
-
         plt.pcolormesh(np.reshape(phi, np.size(phi, 1)), np.reshape(the, np.size(the, 1)),
                        outp - outp_max, cmap=self.noiseDataColormap)
         plt.axis('off')
@@ -281,11 +277,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def merge_data(self):
         self.mergeDataButtonClicks += 1
-        undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'front')
-        undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'back')
-        # combinedGoproImage = self.combine_gopro_image(undistortBackImage, undistortFrontImage)
-        # finalImage = self.create_gopro_noise_image(combinedGoproImage, self.noiseDataPath)
-        # self.display_image_to_label(self.LA_finalImage, self.finalImagePath, self.noiseDataColormap)
+        undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
+        undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
+        combinedGoproImage = self.combine_gopro_image(undistortBackImage, undistortFrontImage)
+        self.create_gopro_noise_image(combinedGoproImage)
+        self.display_image_to_label(self.LA_finalImage, self.finalImagePath, self.noiseDataColormap)
         self.PB_saveAs.setEnabled(True)
         self.SL_transparencyCmap.setEnabled(True)
 
@@ -293,57 +289,66 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         img = self.image2gray(path)
         DIM = (3104, 3000)
 
-        balance = 1
-        dim1 = img.shape[:2][::-1]  # dim1 is the dimension of input image to un-distort
-        assert dim1[0] / dim1[1] == DIM[0] / DIM[1], "Image to undistort needs to have same aspect ratio as the ones used in calibration"
-        dim2 = None
-        dim3 = None
-
-        if not dim2:
-            dim2 = dim1
-        if not dim3:
-            dim3 = dim1
+        # balance = 0.5
+        # dim1 = img.shape[:2][::-1]  # dim1 is the dimension of input image to un-distort
+        # assert dim1[0] / dim1[1] == DIM[0] / DIM[1], "Image to undistort needs to have same aspect ratio as the ones used in calibration"
+        # dim2 = (1552, 1500)
+        # dim3 = dim2
+        #
+        # if not dim2:
+        #     dim2 = dim1
+        # if not dim3:
+        #     dim3 = dim1
 
         if cam == 'back':
             K1 = np.array([[1074.2857599191434, 0.0, 1543.3434056488918], [0.0, 1071.078247699782, 1515.0166363602277], [0.0, 0.0, 1.0]])
             D1 = np.array([-0.02194061779101342, -0.046361048154320884, -0.07769616383646735, 0.15816290585684759])
-            scaled_K = K1 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
-            scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
-            # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
-            new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D1, dim2, np.eye(3),
-                                                                           balance=balance)
-            map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D1, np.eye(3), new_K, dim3, cv2.CV_16SC2)
-            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K1, D1, np.eye(3), K1, DIM, cv2.CV_16SC2)
+            # scaled_K = K1 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
+            # scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
+            # # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
+            # new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D1, dim2, np.eye(3),
+            #                                                                balance=balance)
+            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D1, np.eye(3), new_K, dim3, cv2.CV_16SC2)
+            map1, map2 = cv2.fisheye.initUndistortRectifyMap(K1, D1, np.eye(3), K1, DIM, cv2.CV_16SC2)
 
         if cam == 'front':
             K2 = np.array([[1079.9814399045986, 0.0, 1528.5859633524383], [0.0, 1072.7875518001222, 1510.41089087801], [0.0, 0.0, 1.0]])
             D2 = np.array([[-0.1411607782390653], [0.48559085304858146], [-0.9416906494594367], [0.6051310023846319]])
-            scaled_K = K2 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
-            scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
-            # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
-            new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D2, dim2, np.eye(3),
-                                                                           balance=balance)
-            map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D2, np.eye(3), new_K, dim3, cv2.CV_16SC2)
-            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
+            # scaled_K = K2 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
+            # scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
+            # # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
+            # new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D2, dim2, np.eye(3),
+            #                                                                balance=balance)
+            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D2, np.eye(3), new_K, dim3, cv2.CV_16SC2)
+            map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
 
         imgUndistorted = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-        imgResized = cv2.resize(imgUndistorted, (960, 960))  # Resize image
-        cv2.imshow("output", imgResized)
-        cv2.waitKey(0)
+        # imgResized = cv2.resize(imgUndistorted, (1552, 1500))  # Resize image
+        # cv2.imshow("output", imgResized)
+        # cv2.imshow('Image undistorted', imgUndistorted)
+        # cv2.waitKey(0)
 
         return imgUndistorted
 
     def combine_gopro_image(self, backImg, frontImg):
-        return 0
+        finalImage = np.hstack((frontImg, backImg))
+        return finalImage
 
-    def create_gopro_noise_image(self, combinedGoproImage, noise):
-        return 0
+    def create_gopro_noise_image(self, combinedGoproImage, noise= None):
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        self.finalImagePath = script_dir[:-5] + 'final_image.png'
+        self.finalImagePath = self.finalImagePath.replace(os.sep, '/')
+        cv2.imwrite(self.finalImagePath, combinedGoproImage)
+
+        return combinedGoproImage
 
     def save_final_image(self):
-        imgGray = self.image2gray(self.noiseDataPath)
+        imgGray = self.image2gray(self.finalImagePath)
         finalImagePixmap = self.array2pixmap(imgGray, self.noiseDataColormap)
         self.save_data(finalImagePixmap)
 
     def save_data(self, imageToSave):
         fileName = QFileDialog.getSaveFileName(self, 'Save File', 'finalImage', '*.png')
         imageToSave.save(fileName[0], 'png')
+        os.remove(self.noiseDataPath)
+        os.remove(self.finalImagePath)
