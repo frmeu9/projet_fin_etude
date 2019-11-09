@@ -45,8 +45,8 @@
      <property name="title">
       <string>Colormap</string>
      </property>
-     <addaction name="MN_options_colormap_viridis"/>
      <addaction name="MN_options_colormap_magma"/>
+     <addaction name="MN_options_colormap_viridis"/>
     </widget>
     <addaction name="menuColormap"/>
    </widget>

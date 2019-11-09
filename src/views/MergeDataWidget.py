@@ -10,6 +10,7 @@ from views.SelectGoproFile import SelectGoproFile
 from bs4 import BeautifulSoup
 from itertools import combinations
 from matplotlib import cm
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,28 +32,28 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
         self.setupUi(self)
         self.connect_button()
+        # self.define_colormap_alpha()
 
         self.goproColormap = 'gray'
-        self.noiseDataColormap = 'viridis'
+        self.noiseDataColormap = 'magma'
 
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
         self.goproBackImagePath = ''
         self.finalImagePath = ''
 
-        self.fromComputerButtonClicks = 0
-        self.fromCameraButtonClicks = 0
-        self.loadNoiseFileButtonClicks = 0
-        self.mergeDataButtonClicks = 0
-
-        self.t1 = 15
-        self.t2 = 20
+        self.t1 = 1
+        self.t2 = 5
         self.f1 = 100
         self.f2 = 2000
         self.Ar = None
         self.Athe = None
         self.Aphi = None
         self.nbMic = None
+        self.outp = None
+        self.outpMax = None
+        self.the = None
+        self.phi = None
 
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
@@ -66,6 +67,26 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
 
+    def define_colormap_alpha(self):
+        # get colormap
+        ncolors = 256
+
+        color_array_magma = plt.get_cmap('magma')(range(ncolors))
+        # change alpha values
+        color_array_magma[:, -1] = np.linspace(1.0, 0.0, ncolors)
+        # create a colormap object
+        map_object_magma = LinearSegmentedColormap.from_list(name='magma2', colors=color_array_magma)
+        # register this new colormap with matplotlib
+        plt.register_cmap(cmap=map_object_magma)
+
+        color_array_viridis = plt.get_cmap('viridis')(range(ncolors))
+        # change alpha values
+        color_array_viridis[:, -1] = np.linspace(1.0, 0.0, ncolors)
+        # create a colormap object
+        map_object_viridis = LinearSegmentedColormap.from_list(name='viridis2', colors=color_array_viridis)
+        # register this new colormap with matplotlib
+        plt.register_cmap(cmap=map_object_viridis)
+
     def load_from_computer(self):
         try:
             self.goproFrontImagePath = self.ask_open_filename('Choose front GoPro Image')
@@ -73,7 +94,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.goproBackImagePath = self.goproFrontImagePath.replace('GPFR', 'GPBK')
             # self.goproBackImagePath = self.ask_open_filename('Choose back GoPro Image')
             self.display_image_to_label(self.LA_imageGoproBack, self.goproBackImagePath, self.goproColormap)
-            self.fromComputerButtonClicks += 1
             self.enable_merge_mata_button()
         except TypeError:
             self.PB_fromCamera.setEnabled(True)
@@ -86,7 +106,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         try:
             self.get_gopro_content()
             print(self.goproFrontImagePath, self.goproBackImagePath)
-            self.fromCameraButtonClicks += 1
             self.enable_merge_mata_button()
         except AttributeError:
             self.PB_fromCamera.setEnabled(False)
@@ -130,8 +149,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.get_angle(fs, sig)
         self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
         self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
-        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
-        self.loadNoiseFileButtonClicks += 1
+        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
         self.enable_merge_mata_button()
 
     def wav_file_open(self, script_dir):
@@ -171,13 +189,13 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         comb = np.array(list(combinations(np.arange(self.nbMic), 2)))
 
         # Scan zone
-        phi = np.atleast_2d(np.arange(-180, 181, 1))
-        the = np.atleast_2d(np.arange(-90, 91, 1))
-        Nobs = np.size(phi, 1) * np.size(the, 1)
+        self.phi = np.atleast_2d(np.arange(-180, 181, 1))
+        self.the = np.atleast_2d(np.arange(-90, 91, 1))
+        Nobs = np.size(self.phi, 1) * np.size(self.the, 1)
 
-        gridx = np.reshape(np.transpose(np.cos(np.deg2rad(the))) * np.cos(np.deg2rad(phi)), Nobs)
-        gridy = np.reshape(np.transpose(np.cos(np.deg2rad(the))) * np.sin(np.deg2rad(phi)), Nobs)
-        gridz = np.reshape(np.transpose(np.sin(np.deg2rad(the))) * np.ones((1, np.size(phi, 1))), Nobs)
+        gridx = np.reshape(np.transpose(np.cos(np.deg2rad(self.the))) * np.cos(np.deg2rad(self.phi)), Nobs)
+        gridy = np.reshape(np.transpose(np.cos(np.deg2rad(self.the))) * np.sin(np.deg2rad(self.phi)), Nobs)
+        gridz = np.reshape(np.transpose(np.sin(np.deg2rad(self.the))) * np.ones((1, np.size(self.phi, 1))), Nobs)
 
         # Source
         P = sig[:, int(self.t1 * fs):int((self.t1 + self.t2) * fs)]
@@ -231,20 +249,23 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
             Cxx2_gl[imic, :] = np.atleast_2d(np.interp(Tau, lag, Rpm))
 
-        out_bf = np.mean(Cxx2_gl, axis=0)
-        out_bf[out_bf < 0] = 0
+        self.out_bf = np.mean(Cxx2_gl, axis=0)
+        self.out_bf[self.out_bf < 0] = 0
 
-        outp = np.reshape(10 * np.log10(out_bf / 4e-10), (np.size(the, 1), np.size(phi, 1)))
-        outp_max = 10 * np.log10(np.max(out_bf / 4e-10))
+        self.outp = np.reshape(10 * np.log10(self.out_bf / 4e-10), (np.size(self.the, 1), np.size(self.phi, 1)))
+        self.outpMax = 10 * np.log10(np.max(self.out_bf / 4e-10))
 
-        plt.pcolormesh(np.reshape(phi, np.size(phi, 1)), np.reshape(the, np.size(the, 1)),
-                       outp - outp_max, cmap=self.noiseDataColormap)
+        plt.pcolormesh(np.reshape(self.phi, np.size(self.phi, 1)), np.reshape(self.the, np.size(self.the, 1)),
+                       self.outp - self.outpMax, cmap=self.noiseDataColormap)
         plt.axis('off')
-        plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0)
+        plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0, transparent=True)
 
-    def display_image_to_label(self, myLabel, path, colormap):
-        imgGray = self.image2gray(path)
-        pixmap = self.array2pixmap(imgGray, colormap)
+    def display_image_to_label(self, myLabel, path, colormap=None):
+        if colormap != None:
+            imgGray = self.image2gray(path)
+            pixmap = self.array2pixmap(imgGray, colormap)
+        if colormap == None:
+            pixmap = QPixmap(path)
         width = myLabel.frameGeometry().width()
         height = myLabel.frameGeometry().height()
         pixmapScaled = pixmap.scaled(height, width, QtCore.Qt.KeepAspectRatio)
@@ -255,30 +276,35 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         img = cv2.imread(path, 0)
         return img
 
-    def array2pixmap(self, array, colormap):
-        sm = cm.ScalarMappable(cmap=colormap)
-        rgbImage = sm.to_rgba(array, bytes=True, norm=False)
-        qImg = QImage(rgbImage, rgbImage.shape[1], rgbImage.shape[0], rgbImage.shape[1] * 4, QImage.Format_RGBA8888)
-        pix = QPixmap(qImg)
+    def array2pixmap(self, array=None, colormap=None):
+        if colormap != None:
+            sm = cm.ScalarMappable(cmap=colormap)
+            rgbImage = sm.to_rgba(array, bytes=True, norm=False)
+            qImg = QImage(rgbImage, rgbImage.shape[1], rgbImage.shape[0], rgbImage.shape[1] * 4, QImage.Format_RGBA8888)
+            pix = QPixmap(qImg)
+        if colormap == None and array == None:
+            pix = QPixmap(self.finalImagePath)
         return pix
 
     def set_noise_colormap(self, colormap):
         self.noiseDataColormap = colormap
         if self.noiseDataPath != '':
-            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath, self.noiseDataColormap)
+            plt.pcolormesh(np.reshape(self.phi, np.size(self.phi, 1)), np.reshape(self.the, np.size(self.the, 1)), self.outp - self.outpMax, cmap=self.noiseDataColormap)
+            plt.axis('off')
+            plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0, transparent=True)
+
+            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
 
     def enable_merge_mata_button(self):
-        if self.fromCameraButtonClicks > 0 or self.fromComputerButtonClicks > 0:
-            if self.loadNoiseFileButtonClicks > 0:
+        if self.goproBackImagePath != '' and self.goproFrontImagePath != '' and self.noiseDataPath != '':
                 self.PB_mergeData.setEnabled(True)
 
     def merge_data(self):
-        self.mergeDataButtonClicks += 1
         undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
         undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
         self.combine_gopro_image(undistortBackImage, undistortFrontImage)
         self.overlay_gopro_noise()
-        self.display_image_to_label(self.LA_finalImage, self.finalImagePath, None)
+        self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
         self.PB_saveAs.setEnabled(True)
         self.SL_transparencyCmap.setEnabled(True)
 
@@ -335,35 +361,28 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         cv2.imwrite(self.finalImagePath, finalImage)
 
     def overlay_gopro_noise(self):
-        noiseMap = cv2.imread(self.noiseDataPath)
-        cv2.imshow('', noiseMap)
-        h, w, n = noiseMap.shape
+        noiseMap = cv2.imread(self.noiseDataPath, cv2.IMREAD_UNCHANGED)
+        # cv2.imshow('', noiseMap)
+        h, w, nMax = noiseMap.shape
         noiseMap = np.uint8(noiseMap)
 
-        stitchedImage = cv2.imread(self.finalImagePath)
-        cv2.imshow('', stitchedImage)
+        stitchedImage = cv2.imread(self.finalImagePath, 1)
+        # cv2.imshow('', stitchedImage)
         stitchedImage = np.uint8(stitchedImage)
-        hMax, wMax, nMax = stitchedImage.shape
+        hMax, wMax, n2 = stitchedImage.shape
+        stitchedImage = cv2.cvtColor(stitchedImage, cv2.COLOR_RGB2RGBA)
 
-        noiseMapSized = np.zeros((hMax,wMax))
-
-        print(noiseMap.shape, type(noiseMap[5,5,1])) # grayscale, 3D matrix, uint8
-        print(stitchedImage.shape, type(stitchedImage[5,5,1])) # grayscale, 2D matrix, uint8
+        noiseMapSized = np.zeros((hMax, wMax, nMax))
 
         for i in range(h):
             for j in range(w):
-                noiseMapSized[i,j] += noiseMap[i,j,1]
+                for k in range(nMax):
+                    noiseMapSized[i, j, k] += noiseMap[i, j, k]
 
         noiseMapSized = np.uint8(noiseMapSized)
-        print(noiseMapSized.shape, type(noiseMapSized[5,5])) # 2D matrix, uint8
 
-        if self.noiseDataColormap == 'viridis':
-            noiseMapSized = cv2.applyColorMap(noiseMapSized, cv2.COLORMAP_VIRIDIS)
-        else:
-            noiseMapSized = cv2.applyColorMap(noiseMapSized, cv2.COLORMAP_MAGMA)
-
-        print(noiseMapSized.shape, type(noiseMapSized))  # 3D matrix, uint8
         finalImage = cv2.addWeighted(stitchedImage, 1, noiseMapSized, 0.2, 0, dtype=1)
+        cv2.imshow('', finalImage)
 
         script_dir = os.path.dirname(os.path.realpath(__file__))
         self.finalImagePath = script_dir[:-5] + 'final_image.png'
@@ -371,8 +390,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         cv2.imwrite(self.finalImagePath, finalImage)
 
     def save_final_image(self):
-        imgGray = self.image2gray(self.finalImagePath)
-        finalImagePixmap = self.array2pixmap(imgGray, None)
+        finalImagePixmap = self.array2pixmap()
         self.save_data(finalImagePixmap)
 
     def save_data(self, imageToSave):
