@@ -8,6 +8,7 @@ import scipy.fftpack as ff
 from goprocam import GoProCamera, constants
 from views.SelectGoproFile import SelectGoproFile
 from bs4 import BeautifulSoup
+from PIL import Image
 from itertools import combinations
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap
@@ -18,7 +19,6 @@ import cv2
 import math
 import requests
 import os
-import glob
 
 
 
@@ -346,12 +346,12 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
 
         imgUndistorted = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-        imgResized = cv2.resize(imgUndistorted, (369, 496))  # Resize image
+        # imgResized = cv2.resize(imgUndistorted, (369, 496))  # Resize image
         # cv2.imshow("output", imgResized)
         # cv2.imshow('Image undistorted', imgUndistorted)
         # cv2.waitKey(0)
 
-        return imgResized
+        return imgUndistorted
 
     def combine_gopro_image(self, backImg, frontImg):
         finalImage = np.hstack((frontImg, backImg))
@@ -361,33 +361,14 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         cv2.imwrite(self.finalImagePath, finalImage)
 
     def overlay_gopro_noise(self):
-        noiseMap = cv2.imread(self.noiseDataPath, cv2.IMREAD_UNCHANGED)
-        # cv2.imshow('', noiseMap)
-        h, w, nMax = noiseMap.shape
-        noiseMap = np.uint8(noiseMap)
+        img = cv2.imread(self.noiseDataPath, cv2.IMREAD_UNCHANGED)
+        noiseDataMask = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA))
+        goproImageBackground = Image.fromarray(cv2.imread(self.finalImagePath)).convert(noiseDataMask.mode)
+        goproImageBackground = goproImageBackground.resize(noiseDataMask.size, Image.ANTIALIAS)
 
-        stitchedImage = cv2.imread(self.finalImagePath, 1)
-        # cv2.imshow('', stitchedImage)
-        stitchedImage = np.uint8(stitchedImage)
-        hMax, wMax, n2 = stitchedImage.shape
-        stitchedImage = cv2.cvtColor(stitchedImage, cv2.COLOR_RGB2RGBA)
+        finalImage = Image.blend(goproImageBackground, noiseDataMask, alpha=0.25)
 
-        noiseMapSized = np.zeros((hMax, wMax, nMax))
-
-        for i in range(h):
-            for j in range(w):
-                for k in range(nMax):
-                    noiseMapSized[i, j, k] += noiseMap[i, j, k]
-
-        noiseMapSized = np.uint8(noiseMapSized)
-
-        finalImage = cv2.addWeighted(stitchedImage, 1, noiseMapSized, 0.2, 0, dtype=1)
-        cv2.imshow('', finalImage)
-
-        script_dir = os.path.dirname(os.path.realpath(__file__))
-        self.finalImagePath = script_dir[:-5] + 'final_image.png'
-        self.finalImagePath = self.finalImagePath.replace(os.sep, '/')
-        cv2.imwrite(self.finalImagePath, finalImage)
+        finalImage.save('final_image.png')
 
     def save_final_image(self):
         finalImagePixmap = self.array2pixmap()
