@@ -58,7 +58,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
         self.PB_fromCamera.setEnabled(False)
-        self.SL_transparencyCmap.setEnabled(False)
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
@@ -306,7 +305,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.overlay_gopro_noise()
         self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
         self.PB_saveAs.setEnabled(True)
-        self.SL_transparencyCmap.setEnabled(True)
 
     def undistort_gopro_image(self, path, cam):
         img = self.image2gray(path)
