@@ -32,7 +32,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
         self.setupUi(self)
         self.connect_button()
-        # self.define_colormap_alpha()
 
         self.goproColormap = 'gray'
         self.noiseDataColormap = 'magma'
@@ -65,26 +64,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_fromCamera.clicked.connect(self.load_from_gopro)
         self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
-
-    def define_colormap_alpha(self):
-        # get colormap
-        ncolors = 256
-
-        color_array_magma = plt.get_cmap('magma')(range(ncolors))
-        # change alpha values
-        color_array_magma[:, -1] = np.linspace(1.0, 0.0, ncolors)
-        # create a colormap object
-        map_object_magma = LinearSegmentedColormap.from_list(name='magma2', colors=color_array_magma)
-        # register this new colormap with matplotlib
-        plt.register_cmap(cmap=map_object_magma)
-
-        color_array_viridis = plt.get_cmap('viridis')(range(ncolors))
-        # change alpha values
-        color_array_viridis[:, -1] = np.linspace(1.0, 0.0, ncolors)
-        # create a colormap object
-        map_object_viridis = LinearSegmentedColormap.from_list(name='viridis2', colors=color_array_viridis)
-        # register this new colormap with matplotlib
-        plt.register_cmap(cmap=map_object_viridis)
 
     def load_from_computer(self):
         try:
@@ -322,26 +301,20 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             dim3 = dim1
 
         if cam == 'back':
-            K1 = np.array([[1074.2857599191434, 0.0, 1543.3434056488918], [0.0, 1071.078247699782, 1515.0166363602277], [0.0, 0.0, 1.0]])
-            D1 = np.array([-0.02194061779101342, -0.046361048154320884, -0.07769616383646735, 0.15816290585684759])
-            scaled_K = K1 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
-            scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
-            # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
-            new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D1, dim2, np.eye(3),
-                                                                           balance=balance)
-            map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D1, np.eye(3), new_K, dim3, cv2.CV_16SC2)
-            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K1, D1, np.eye(3), K1, DIM, cv2.CV_16SC2)
+            K = np.array([[1074.2857599191434, 0.0, 1543.3434056488918], [0.0, 1071.078247699782, 1515.0166363602277], [0.0, 0.0, 1.0]])
+            D = np.array([-0.02194061779101342, -0.046361048154320884, -0.07769616383646735, 0.15816290585684759])
 
         if cam == 'front':
-            K2 = np.array([[1079.9814399045986, 0.0, 1528.5859633524383], [0.0, 1072.7875518001222, 1510.41089087801], [0.0, 0.0, 1.0]])
-            D2 = np.array([[-0.1411607782390653], [0.48559085304858146], [-0.9416906494594367], [0.6051310023846319]])
-            scaled_K = K2 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
-            scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
-            # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
-            new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D2, dim2, np.eye(3),
+            K = np.array([[1079.9814399045986, 0.0, 1528.5859633524383], [0.0, 1072.7875518001222, 1510.41089087801], [0.0, 0.0, 1.0]])
+            D = np.array([[-0.1411607782390653], [0.48559085304858146], [-0.9416906494594367], [0.6051310023846319]])
+
+        scaled_K = K * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
+        scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
+        # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
+        new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D, dim2, np.eye(3),
                                                                            balance=balance)
-            map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D2, np.eye(3), new_K, dim3, cv2.CV_16SC2)
-            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
+        map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D, np.eye(3), new_K, dim3, cv2.CV_16SC2)
+        # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
 
         imgUndistorted = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
         # imgResized = cv2.resize(imgUndistorted, (369, 496))  # Resize image
