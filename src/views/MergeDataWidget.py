@@ -291,7 +291,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             plt.pcolormesh(np.reshape(self.phi, np.size(self.phi, 1)), np.reshape(self.the, np.size(self.the, 1)), self.outp - self.outpMax, cmap=self.noiseDataColormap)
             plt.axis('off')
             plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0, transparent=True)
-
+            self.merge_data()
             self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
 
     def enable_merge_mata_button(self):
@@ -310,38 +310,38 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         img = self.image2gray(path)
         DIM = (3104, 3000)
 
-        # balance = 0.5
-        # dim1 = img.shape[:2][::-1]  # dim1 is the dimension of input image to un-distort
-        # assert dim1[0] / dim1[1] == DIM[0] / DIM[1], "Image to undistort needs to have same aspect ratio as the ones used in calibration"
-        # dim2 = (1552, 1500)
-        # dim3 = dim2
-        #
-        # if not dim2:
-        #     dim2 = dim1
-        # if not dim3:
-        #     dim3 = dim1
+        balance = 0.5
+        dim1 = img.shape[:2][::-1]  # dim1 is the dimension of input image to un-distort
+        assert dim1[0] / dim1[1] == DIM[0] / DIM[1], "Image to undistort needs to have same aspect ratio as the ones used in calibration"
+        dim2 = (1552, 1500)
+        dim3 = dim2
+
+        if not dim2:
+            dim2 = dim1
+        if not dim3:
+            dim3 = dim1
 
         if cam == 'back':
             K1 = np.array([[1074.2857599191434, 0.0, 1543.3434056488918], [0.0, 1071.078247699782, 1515.0166363602277], [0.0, 0.0, 1.0]])
             D1 = np.array([-0.02194061779101342, -0.046361048154320884, -0.07769616383646735, 0.15816290585684759])
-            # scaled_K = K1 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
-            # scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
-            # # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
-            # new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D1, dim2, np.eye(3),
-            #                                                                balance=balance)
-            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D1, np.eye(3), new_K, dim3, cv2.CV_16SC2)
-            map1, map2 = cv2.fisheye.initUndistortRectifyMap(K1, D1, np.eye(3), K1, DIM, cv2.CV_16SC2)
+            scaled_K = K1 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
+            scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
+            # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
+            new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D1, dim2, np.eye(3),
+                                                                           balance=balance)
+            map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D1, np.eye(3), new_K, dim3, cv2.CV_16SC2)
+            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K1, D1, np.eye(3), K1, DIM, cv2.CV_16SC2)
 
         if cam == 'front':
             K2 = np.array([[1079.9814399045986, 0.0, 1528.5859633524383], [0.0, 1072.7875518001222, 1510.41089087801], [0.0, 0.0, 1.0]])
             D2 = np.array([[-0.1411607782390653], [0.48559085304858146], [-0.9416906494594367], [0.6051310023846319]])
-            # scaled_K = K2 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
-            # scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
-            # # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
-            # new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D2, dim2, np.eye(3),
-            #                                                                balance=balance)
-            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D2, np.eye(3), new_K, dim3, cv2.CV_16SC2)
-            map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
+            scaled_K = K2 * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
+            scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
+            # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
+            new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D2, dim2, np.eye(3),
+                                                                           balance=balance)
+            map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D2, np.eye(3), new_K, dim3, cv2.CV_16SC2)
+            # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
 
         imgUndistorted = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
         # imgResized = cv2.resize(imgUndistorted, (369, 496))  # Resize image
