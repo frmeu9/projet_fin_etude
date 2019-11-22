@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import cv2
-import math
 import requests
 import os
 
@@ -278,12 +277,16 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
                 self.PB_mergeData.setEnabled(True)
 
     def merge_data(self):
-        undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
-        undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
-        self.combine_gopro_image(undistortBackImage, undistortFrontImage)
-        self.overlay_gopro_noise()
-        self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
-        self.PB_saveAs.setEnabled(True)
+        # undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
+        # undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
+        # self.combine_gopro_image(undistortBackImage, undistortFrontImage)
+        # self.overlay_gopro_noise()
+        # self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
+        # self.PB_saveAs.setEnabled(True)
+        self.project_sphere_to_plane(self)
+
+    def project_sphere_to_plane(self):
+        pass
 
     def undistort_gopro_image(self, path, cam):
         img = self.image2gray(path)
