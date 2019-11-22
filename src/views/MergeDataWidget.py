@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import cv2
+import math
 import requests
 import os
-
 
 
 MergeDataWidgetPath = os.path.dirname(os.path.realpath(__file__)) + '\\MergeDataWidget.ui'
@@ -40,8 +40,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproBackImagePath = ''
         self.finalImagePath = ''
 
-        self.t1 = 1
-        self.t2 = 5
+        self.t1 = None
+        self.t2 = None
         self.f1 = 100
         self.f2 = 2000
         self.Ar = None
@@ -52,10 +52,16 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.outpMax = None
         self.the = None
         self.phi = None
+        self.fs = None
+        self.sig = None
 
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
         self.PB_fromCamera.setEnabled(False)
+        self.SB_time1.setMaximum(29)
+        self.SB_time1.setMinimum(0)
+        self.SB_time2.setMaximum(30)
+        self.SB_time2.setMinimum(1)
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
@@ -63,6 +69,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_fromCamera.clicked.connect(self.load_from_gopro)
         self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
+        # self.SB_time1.valueChanged.connect(self.time_change)
+        # self.SB_time2.valueChanged.connect(self.time_change)
 
     def load_from_computer(self):
         try:
@@ -120,14 +128,30 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproFrontImagePath = cameraDir[1] + front
         self.goproBackImagePath = cameraDir[0] + back
 
+    def time_change(self):
+        t1 = self.SB_time1.value()
+        t2 = self.SB_time2.value()
+        if t2 < t1:
+            self.SB_time2.setValue(t1+1)
+        elif t1 > t2:
+            self.SB_time2.setValue(t2 - 1)
+        self.display_noise_data()
+
     def display_noise_data(self):
         script_dir = os.path.dirname(os.path.realpath(__file__))
-        fs, sig = self.wav_file_open(script_dir)
-        self.get_angle(fs, sig)
-        self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
-        self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
-        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
-        self.enable_merge_mata_button()
+        if self.noiseDataPath == '':
+            self.fs, self.sig = self.wav_file_open(script_dir)
+            self.get_angle(self.fs, self.sig)
+            self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
+            self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
+            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
+            self.enable_merge_mata_button()
+        else:
+            self.get_angle(self.fs, self.sig)
+            self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
+            self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
+            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
+            self.enable_merge_mata_button()
 
     def wav_file_open(self, script_dir):
         # Fonction tirée du script Beamforming3D de Soft dB
@@ -155,6 +179,9 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             return fs, sig
 
     def get_angle(self, fs, sig):
+        self.t1 = self.SB_time1.value()
+        self.t2 = self.SB_time2.value()
+        print(self.t1, self.t2)
         # Fonction tirée du script Beamforming3D de Soft dB
         Nfft = fs
         c0 = 343
@@ -238,6 +265,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0, transparent=True)
 
     def display_image_to_label(self, myLabel, path, colormap=None):
+        pixmap = None
         if colormap != None:
             imgGray = self.image2gray(path)
             pixmap = self.array2pixmap(imgGray, colormap)
@@ -254,6 +282,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         return img
 
     def array2pixmap(self, array=None, colormap=None):
+        pix = None
         if colormap != None:
             sm = cm.ScalarMappable(cmap=colormap)
             rgbImage = sm.to_rgba(array, bytes=True, norm=False)
@@ -276,17 +305,86 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         if self.goproBackImagePath != '' and self.goproFrontImagePath != '' and self.noiseDataPath != '':
                 self.PB_mergeData.setEnabled(True)
 
+    # def merge_data(self):
+    #     # backImg = self.project_sphere_to_plane(self.goproBackImagePath)
+    #     # frontImg = self.project_sphere_to_plane(self.goproFrontImagePath)
+    #     # undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
+    #     # undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
+    #     # self.combine_gopro_image(backImg, frontImg)
+    #     self.combine_gopro_image(self.goproBackImagePath, self.goproFrontImagePath)
+    #     self.project_sphere_to_plane(self.finalImagePath)
+    #     self.overlay_gopro_noise()
+    #     self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
+    #     self.PB_saveAs.setEnabled(True)
+
     def merge_data(self):
+        backImg = self.project_sphere_to_plane(self.goproBackImagePath)
+        frontImg = self.project_sphere_to_plane(self.goproFrontImagePath)
         # undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
         # undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
-        # self.combine_gopro_image(undistortBackImage, undistortFrontImage)
-        # self.overlay_gopro_noise()
-        # self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
-        # self.PB_saveAs.setEnabled(True)
-        self.project_sphere_to_plane(self)
+        self.combine_gopro_image(backImg, frontImg)
+        # self.combine_gopro_image(self.goproBackImagePath, self.goproFrontImagePath)
+        # self.project_sphere_to_plane(self.finalImagePath)
+        self.overlay_gopro_noise()
+        self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
+        self.PB_saveAs.setEnabled(True)
 
-    def project_sphere_to_plane(self):
-        pass
+    def project_sphere_to_plane(self, path):
+        originalImage = cv2.imread(path)
+
+        if originalImage.size == 0:
+            print('Image vide')
+            return None
+
+        print(originalImage.shape)
+        row = originalImage.shape[0]  # 3000
+        col = originalImage.shape[1]  # 3104
+        channel = originalImage.shape[2]  # 3
+
+        outImg = np.zeros((row, col, channel), dtype=np.uint8)
+
+        for i in range(row):
+            for j in range(col):
+                [x, y] = self.transform_rThetaPhi_to_xyz(j, i, col, row)
+
+                if x >= col and y >= row:
+                    continue
+
+                if x < 0 and y < 0:
+                    continue
+
+                color = originalImage[y, x, :]
+                outImg[i, j, :] = color
+
+        # cv2.imwrite(self.finalImagePath, outImg)
+        return outImg
+
+    def transform_rThetaPhi_to_xyz(self, x, y, srcImgWidth, srcImgHeight):
+        FOV = math.pi/180*180
+        FOV2 = math.pi/180*180
+        width = srcImgWidth
+        height = srcImgHeight
+
+        # POLAR ANGLE
+        theta = math.pi * (x / width - 0.5)
+        phi = math.pi* (y / height - 0.5)
+
+        # Vector in 3D space
+        pointSphereX = math.cos(phi) * math.sin(theta)
+        pointSphereY = math.cos(phi) * math.cos(theta)
+        pointSphereZ = math.sin(phi) * math.cos(theta)
+
+        # Calculate fisheye angle and radius
+        theta = math.atan2(pointSphereZ, pointSphereX)
+        phi = math.atan2(math.sqrt(pointSphereX * pointSphereX + pointSphereZ * pointSphereZ), pointSphereY)
+
+        r = width * phi / FOV
+        r2 = height * phi / FOV2
+
+        # Pixel in fisheye space
+        fisheyeX = 0.5 * width + r * math.cos(theta)
+        fisheyeY = 0.5 * height + r2 * math.sin(theta)
+        return [int(fisheyeX), int(fisheyeY)]
 
     def undistort_gopro_image(self, path, cam):
         img = self.image2gray(path)
@@ -327,12 +425,51 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
         return imgUndistorted
 
-    def combine_gopro_image(self, backImg, frontImg):
-        finalImage = np.hstack((frontImg, backImg))
+    def combine_gopro_image(self, backImgPath, frontImgPath):
+        # backImg = cv2.imread(backImgPath)
+        # frontImg = cv2.imread(frontImgPath)
+        # finalImage = np.hstack((frontImg, backImg))
+        finalImage = np.hstack((frontImgPath, backImgPath))
         script_dir = os.path.dirname(os.path.realpath(__file__))
         self.finalImagePath = script_dir[:-5] + 'final_image.png'
         self.finalImagePath = self.finalImagePath.replace(os.sep, '/')
         cv2.imwrite(self.finalImagePath, finalImage)
+
+    def stitch_gopro_image(self):
+        img_ = cv2.imread('right.JPG')
+        img1 = cv2.cvtColor(img_, cv2.COLOR_BGR2GRAY)
+        img = cv2.imread('left.JPG')
+        img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        sift = cv2.xfeatures2d.SIFT_create()
+        # find the keypoints and descriptors with SIFT
+        kp1, des1 = sift.detectAndCompute(img1, None)
+        kp2, des2 = sift.detectAndCompute(img2, None)
+        bf = cv2.BFMatcher()
+        matches = bf.knnMatch(des1, des2, k=2)
+        # Apply ratio test
+        good = []
+        for m in matches:
+            if m[0].distance < 0.5 * m[1].distance:
+                good.append(m)
+        matches = np.asarray(good)
+
+        if len(matches[:, 0]) >= 4:
+            src = np.float32([kp1[m.queryIdx].pt for m in matches[:, 0]]).reshape(-1, 1, 2)
+            dst = np.float32([kp2[m.trainIdx].pt for m in matches[:, 0]]).reshape(-1, 1, 2)
+
+            H, masked = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
+            # print H
+        else:
+            raise AssertionError('Can’t find enough keypoints.')
+
+        dst = cv2.warpPerspective(img_, H, (img.shape[1] + img_.shape[1], img.shape[0]))
+        plt.subplot(122), plt.imshow(dst), plt.title('WarpedImage')
+        plt.show()
+        plt.figure()
+        dst[0:img.shape[0], 0:img.shape[1]] = img
+        cv2.imwrite('output.jpg', dst)
+        plt.imshow(dst)
+        plt.show()
 
     def overlay_gopro_noise(self):
         img = cv2.imread(self.noiseDataPath, cv2.IMREAD_UNCHANGED)
@@ -340,7 +477,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         goproImageBackground = Image.fromarray(cv2.imread(self.finalImagePath)).convert(noiseDataMask.mode)
         goproImageBackground = goproImageBackground.resize(noiseDataMask.size, Image.ANTIALIAS)
 
-        finalImage = Image.blend(goproImageBackground, noiseDataMask, alpha=0.25)
+        finalImage = Image.blend(goproImageBackground, noiseDataMask, alpha=0.20)
 
         finalImage.save('final_image.png')
 
