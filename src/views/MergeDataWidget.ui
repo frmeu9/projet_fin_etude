@@ -200,7 +200,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Load Noise File</string>
+             <string>Load Noise File/Update NoiseMap</string>
             </property>
            </widget>
           </item>

@@ -58,10 +58,13 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
         self.PB_fromCamera.setEnabled(False)
-        self.SB_time1.setMaximum(29)
+
+        self.SB_time1.setValue(1)
+        self.SB_time2.setValue(2)
         self.SB_time1.setMinimum(0)
+        self.SB_time1.setMaximum(30)
+        self.SB_time2.setMinimum(0)
         self.SB_time2.setMaximum(30)
-        self.SB_time2.setMinimum(1)
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
@@ -69,8 +72,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_fromCamera.clicked.connect(self.load_from_gopro)
         self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
-        # self.SB_time1.valueChanged.connect(self.time_change)
-        # self.SB_time2.valueChanged.connect(self.time_change)
 
     def load_from_computer(self):
         try:
@@ -133,11 +134,9 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         t2 = self.SB_time2.value()
         if t2 < t1:
             self.SB_time2.setValue(t1+1)
-        elif t1 > t2:
-            self.SB_time2.setValue(t2 - 1)
-        self.display_noise_data()
 
     def display_noise_data(self):
+        self.time_change()
         script_dir = os.path.dirname(os.path.realpath(__file__))
         if self.noiseDataPath == '':
             self.fs, self.sig = self.wav_file_open(script_dir)
@@ -295,36 +294,23 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def set_noise_colormap(self, colormap):
         self.noiseDataColormap = colormap
         if self.noiseDataPath != '':
-            plt.pcolormesh(np.reshape(self.phi, np.size(self.phi, 1)), np.reshape(self.the, np.size(self.the, 1)), self.outp - self.outpMax, cmap=self.noiseDataColormap)
-            plt.axis('off')
-            plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0, transparent=True)
-            self.merge_data()
-            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
+            self.display_noise_data()
+            if self.finalImagePath != '':
+                self.merge_data()
 
     def enable_merge_mata_button(self):
         if self.goproBackImagePath != '' and self.goproFrontImagePath != '' and self.noiseDataPath != '':
                 self.PB_mergeData.setEnabled(True)
 
-    # def merge_data(self):
-    #     # backImg = self.project_sphere_to_plane(self.goproBackImagePath)
-    #     # frontImg = self.project_sphere_to_plane(self.goproFrontImagePath)
-    #     # undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
-    #     # undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
-    #     # self.combine_gopro_image(backImg, frontImg)
-    #     self.combine_gopro_image(self.goproBackImagePath, self.goproFrontImagePath)
-    #     self.project_sphere_to_plane(self.finalImagePath)
-    #     self.overlay_gopro_noise()
-    #     self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
-    #     self.PB_saveAs.setEnabled(True)
-
     def merge_data(self):
-        backImg = self.project_sphere_to_plane(self.goproBackImagePath)
-        frontImg = self.project_sphere_to_plane(self.goproFrontImagePath)
-        # undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
-        # undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
-        self.combine_gopro_image(backImg, frontImg)
+        # backImg = self.project_sphere_to_plane(self.goproBackImagePath)
+        # frontImg = self.project_sphere_to_plane(self.goproFrontImagePath)
+        undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
+        undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
+        # self.combine_gopro_image(backImg, frontImg)
         # self.combine_gopro_image(self.goproBackImagePath, self.goproFrontImagePath)
         # self.project_sphere_to_plane(self.finalImagePath)
+        self.combine_gopro_image(undistortBackImage, undistortFrontImage)
         self.overlay_gopro_noise()
         self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
         self.PB_saveAs.setEnabled(True)
