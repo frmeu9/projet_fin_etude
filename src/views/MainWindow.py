@@ -25,6 +25,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.MN_help_acknowledgement.triggered.connect(self.menu_help_acknow)
 
     def exit_main_window(self):
+        noisePath = self.MergeDataWidget.noiseDataPath
+        finalImagePath = self.MergeDataWidget.finalImagePath
+        os.remove(noisePath)
+        os.remove(finalImagePath)
         self.close()
 
     def chosen_colormap(self):

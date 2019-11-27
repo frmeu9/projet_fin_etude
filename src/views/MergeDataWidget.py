@@ -333,10 +333,10 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             for j in range(col):
                 [x, y] = self.transform_rThetaPhi_to_xyz(j, i, col, row)
 
-                if x >= col and y >= row:
+                if x >= col or y >= row:
                     continue
 
-                if x < 0 and y < 0:
+                if x < 0 or y < 0:
                     continue
 
                 color = originalImage[y, x, :]
@@ -474,5 +474,3 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def save_data(self, imageToSave):
         fileName = QFileDialog.getSaveFileName(self, 'Save File', 'finalImage', '*.png')
         imageToSave.save(fileName[0], 'png')
-        os.remove(self.noiseDataPath)
-        os.remove(self.finalImagePath)
