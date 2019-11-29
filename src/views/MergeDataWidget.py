@@ -39,29 +39,29 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproBackImagePath = ''
         self.finalImagePath = ''
 
-        self.t1 = 5
-        self.t2 = 13
         self.f1 = 100
         self.f2 = 2000
         self.Ar = None
         self.Athe = None
         self.Aphi = None
         self.nbMic = None
+        self.fs = None
+        self.sig = None
+        self.t1 = None
+        self.t2 = None
         self.outp = None
         self.outpMax = None
         self.the = None
         self.phi = None
-        self.fs = None
-        self.sig = None
 
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
         self.PB_fromCamera.setEnabled(False)
-        self.SB_time1.setEnabled(False)
-        self.SB_time2.setEnabled(False)
+        # self.SB_time1.setEnabled(True)
+        # self.SB_time2.setEnabled(True)
 
-        self.SB_time1.setValue(1)
-        self.SB_time2.setValue(2)
+        # self.SB_time1.setValue(0)
+        # self.SB_time2.setValue(1)
         self.SB_time1.setMinimum(0)
         self.SB_time1.setMaximum(30)
         self.SB_time2.setMinimum(0)
@@ -69,12 +69,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
-        self.PB_loadNoiseFile.clicked.connect(self.display_noise_data)
+        self.PB_loadNoiseFile.clicked.connect(self.load_noise_data)
         self.PB_fromCamera.clicked.connect(self.load_from_gopro)
+        self.PB_updateFFT.clicked.connect(self.update_FFT)
         self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
-        # self.SB_time1.valueChanged(self.display_noise_data)
-        # self.SB_time2.valueChanged(self.display_noise_data)
 
     def load_from_computer(self):
         try:
@@ -83,7 +82,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.goproBackImagePath = self.goproFrontImagePath.replace('GPFR', 'GPBK')
             # self.goproBackImagePath = self.ask_open_filename('Choose back GoPro Image')
             self.display_image_to_label(self.LA_imageGoproBack, self.goproBackImagePath, self.goproColormap)
-            self.enable_merge_mata_button()
+            self.enable_merge_data_button()
         except TypeError:
             self.PB_fromCamera.setEnabled(True)
 
@@ -95,7 +94,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         try:
             self.get_gopro_content()
             print(self.goproFrontImagePath, self.goproBackImagePath)
-            self.enable_merge_mata_button()
+            self.enable_merge_data_button()
         except AttributeError:
             self.PB_fromCamera.setEnabled(False)
             self.load_from_computer()
@@ -132,22 +131,28 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproFrontImagePath = cameraDir[1] + front
         self.goproBackImagePath = cameraDir[0] + back
 
+    def load_noise_data(self):
+        self.noiseDataPath = ''
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        self.fs, self.sig = self.wav_file_open(script_dir)
+        self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
+        self.update_FFT()
+
     def time_change(self):
         t1 = self.SB_time1.value()
         t2 = self.SB_time2.value()
         if t2 < t1:
             self.SB_time2.setValue(t1+1)
 
-    def display_noise_data(self):
-        # self.time_change()
-        script_dir = os.path.dirname(os.path.realpath(__file__))
-        if self.noiseDataPath == '':
-            self.fs, self.sig = self.wav_file_open(script_dir)
-            self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
-        self.get_angle(self.fs, self.sig)
-        self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
-        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
-        self.enable_merge_mata_button()
+    def update_FFT(self):
+        try:
+            self.time_change()
+            self.get_angle(self.fs, self.sig)
+            self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
+            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
+            self.enable_merge_data_button()
+        except TypeError:
+            self.load_noise_data()
 
     def wav_file_open(self, script_dir):
         # Fonction tirée du script Beamforming3D de Soft dB
@@ -178,6 +183,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.t1 = self.SB_time1.value()
         self.t2 = self.SB_time2.value()
         print(self.t1, self.t2)
+
         # Fonction tirée du script Beamforming3D de Soft dB
         Nfft = fs
         c0 = 343
@@ -257,8 +263,10 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
         plt.pcolormesh(np.reshape(self.phi, np.size(self.phi, 1)), np.reshape(self.the, np.size(self.the, 1)),
                        self.outp - self.outpMax, cmap=self.noiseDataColormap)
+        os.remove(self.noiseDataPath)
         plt.axis('off')
         plt.savefig('noise_angle.png', bbox_inches='tight', pad_inches=0, transparent=True)
+        plt.close()
 
     def display_image_to_label(self, myLabel, path, colormap=None):
         pixmap = None
@@ -291,11 +299,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def set_noise_colormap(self, colormap):
         self.noiseDataColormap = colormap
         if self.noiseDataPath != '':
-            self.display_noise_data()
+            self.update_FFT()
             if self.finalImagePath != '':
                 self.merge_data()
 
-    def enable_merge_mata_button(self):
+    def enable_merge_data_button(self):
         if self.goproBackImagePath != '' and self.goproFrontImagePath != '' and self.noiseDataPath != '':
                 self.PB_mergeData.setEnabled(True)
 
@@ -416,11 +424,9 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         cv2.imwrite(self.finalImagePath, finalImage)
 
     def stitch_gopro_image(self):
-        img_ = cv2.imread(self.goproFrontImagePath)
-        img1 = cv2.cvtColor(img_, cv2.COLOR_BGR2GRAY)
-        img = cv2.imread(self.goproBackImagePath)
-        img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        sift = cv2.feature2d.SIFT_create()
+        img1 = cv2.imread(self.goproFrontImagePath, cv2.IMREAD_GRAYSCALE)
+        img2 = cv2.imread(self.goproBackImagePath, cv2.IMREAD_GRAYSCALE)
+        sift = cv2.ORB_create(nfeatures=5000)
         # find the keypoints and descriptors with SIFT
         kp1, des1 = sift.detectAndCompute(img1, None)
         kp2, des2 = sift.detectAndCompute(img2, None)
@@ -432,6 +438,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             if m[0].distance < 0.5 * m[1].distance:
                 good.append(m)
         matches = np.asarray(good)
+        print(matches)
+
 
         if len(matches[:, 0]) >= 4:
             src = np.float32([kp1[m.queryIdx].pt for m in matches[:, 0]]).reshape(-1, 1, 2)
