@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from itertools import combinations
 from matplotlib import cm
-from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -40,8 +39,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproBackImagePath = ''
         self.finalImagePath = ''
 
-        self.t1 = None
-        self.t2 = None
+        self.t1 = 5
+        self.t2 = 13
         self.f1 = 100
         self.f2 = 2000
         self.Ar = None
@@ -58,6 +57,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
         self.PB_fromCamera.setEnabled(False)
+        self.SB_time1.setEnabled(False)
+        self.SB_time2.setEnabled(False)
 
         self.SB_time1.setValue(1)
         self.SB_time2.setValue(2)
@@ -72,6 +73,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.PB_fromCamera.clicked.connect(self.load_from_gopro)
         self.PB_saveAs.clicked.connect(self.save_final_image)
         self.PB_mergeData.clicked.connect(self.merge_data)
+        # self.SB_time1.valueChanged(self.display_noise_data)
+        # self.SB_time2.valueChanged(self.display_noise_data)
 
     def load_from_computer(self):
         try:
@@ -136,21 +139,15 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.SB_time2.setValue(t1+1)
 
     def display_noise_data(self):
-        self.time_change()
+        # self.time_change()
         script_dir = os.path.dirname(os.path.realpath(__file__))
         if self.noiseDataPath == '':
             self.fs, self.sig = self.wav_file_open(script_dir)
-            self.get_angle(self.fs, self.sig)
             self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
-            self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
-            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
-            self.enable_merge_mata_button()
-        else:
-            self.get_angle(self.fs, self.sig)
-            self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
-            self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
-            self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
-            self.enable_merge_mata_button()
+        self.get_angle(self.fs, self.sig)
+        self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
+        self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
+        self.enable_merge_mata_button()
 
     def wav_file_open(self, script_dir):
         # Fonction tirée du script Beamforming3D de Soft dB
@@ -303,16 +300,13 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
                 self.PB_mergeData.setEnabled(True)
 
     def merge_data(self):
+        # self.combine_gopro_image(self.goproBackImagePath, self.goproFrontImagePath)
         # backImg = self.project_sphere_to_plane(self.goproBackImagePath)
         # frontImg = self.project_sphere_to_plane(self.goproFrontImagePath)
-        undistortBackImage = self.undistort_gopro_image(self.goproBackImagePath, 'back')
-        undistortFrontImage = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
-        # self.combine_gopro_image(backImg, frontImg)
-        # self.combine_gopro_image(self.goproBackImagePath, self.goproFrontImagePath)
         # self.project_sphere_to_plane(self.finalImagePath)
-        self.combine_gopro_image(undistortBackImage, undistortFrontImage)
-        self.overlay_gopro_noise()
-        self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
+        # self.overlay_gopro_noise()
+        # self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
+        self.stitch_gopro_image()
         self.PB_saveAs.setEnabled(True)
 
     def project_sphere_to_plane(self, path):
@@ -412,21 +406,21 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         return imgUndistorted
 
     def combine_gopro_image(self, backImgPath, frontImgPath):
-        # backImg = cv2.imread(backImgPath)
-        # frontImg = cv2.imread(frontImgPath)
-        # finalImage = np.hstack((frontImg, backImg))
-        finalImage = np.hstack((frontImgPath, backImgPath))
+        backImg = cv2.imread(backImgPath)
+        frontImg = cv2.imread(frontImgPath)
+        finalImage = np.hstack((frontImg, backImg))
+        # finalImage = np.hstack((frontImgPath, backImgPath))
         script_dir = os.path.dirname(os.path.realpath(__file__))
         self.finalImagePath = script_dir[:-5] + 'final_image.png'
         self.finalImagePath = self.finalImagePath.replace(os.sep, '/')
         cv2.imwrite(self.finalImagePath, finalImage)
 
     def stitch_gopro_image(self):
-        img_ = cv2.imread('right.JPG')
+        img_ = cv2.imread(self.goproFrontImagePath)
         img1 = cv2.cvtColor(img_, cv2.COLOR_BGR2GRAY)
-        img = cv2.imread('left.JPG')
+        img = cv2.imread(self.goproBackImagePath)
         img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        sift = cv2.xfeatures2d.SIFT_create()
+        sift = cv2.feature2d.SIFT_create()
         # find the keypoints and descriptors with SIFT
         kp1, des1 = sift.detectAndCompute(img1, None)
         kp2, des2 = sift.detectAndCompute(img2, None)
@@ -453,7 +447,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         plt.show()
         plt.figure()
         dst[0:img.shape[0], 0:img.shape[1]] = img
-        cv2.imwrite('output.jpg', dst)
+        # cv2.imwrite('output.jpg', dst)
         plt.imshow(dst)
         plt.show()
 
