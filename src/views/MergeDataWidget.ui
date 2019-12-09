@@ -55,7 +55,7 @@
      </property>
      <layout class="QGridLayout" name="gridLayout_5">
       <item row="0" column="0">
-       <layout class="QGridLayout" name="LAYOUT_loadDAta">
+       <layout class="QGridLayout" name="LAYOUT_loadData">
         <item row="0" column="1">
          <widget class="Line" name="LINE_dataSeparator">
           <property name="orientation">
@@ -64,7 +64,7 @@
          </widget>
         </item>
         <item row="0" column="0">
-         <layout class="QGridLayout" name="gridLayout_6">
+         <layout class="QGridLayout" name="Image">
           <item row="0" column="0" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
@@ -124,7 +124,7 @@
          </layout>
         </item>
         <item row="0" column="2">
-         <layout class="QGridLayout" name="gridLayout_8">
+         <layout class="QGridLayout" name="Noise">
           <item row="4" column="0">
            <widget class="QPushButton" name="PB_loadNoiseFile">
             <property name="sizePolicy">
@@ -159,7 +159,7 @@
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QGroupBox" name="groupBox_3">
+           <widget class="QGroupBox" name="GB_fftTime">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -171,7 +171,7 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
-              <widget class="QGroupBox" name="groupBox_5">
+              <widget class="QGroupBox" name="GB_time1">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                  <horstretch>0</horstretch>
@@ -193,7 +193,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QGroupBox" name="groupBox_4">
+              <widget class="QGroupBox" name="GB_time2">
                <property name="title">
                 <string>T2</string>
                </property>
@@ -212,13 +212,13 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QGroupBox" name="groupBox_6">
+           <widget class="QGroupBox" name="GB_frequency">
             <property name="title">
              <string>Frequency for FFT</string>
             </property>
             <layout class="QGridLayout" name="gridLayout_11">
              <item row="0" column="0">
-              <widget class="QGroupBox" name="groupBox_7">
+              <widget class="QGroupBox" name="GB_frequency1">
                <property name="title">
                 <string>F1</string>
                </property>
@@ -230,7 +230,7 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QGroupBox" name="groupBox_8">
+              <widget class="QGroupBox" name="GB_frequency2">
                <property name="title">
                 <string>F2</string>
                </property>

@@ -33,7 +33,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
         self.goproColormap = 'gray'
         self.noiseDataColormap = 'magma'
-
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
         self.goproBackImagePath = ''
@@ -53,20 +52,24 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.outpMax = None
         self.the = None
         self.phi = None
+        self.fov = 186
 
         self.PB_mergeData.setEnabled(False)
         self.PB_saveAs.setEnabled(False)
         self.PB_fromCamera.setEnabled(False)
-
         self.SB_time1.setMinimum(0)
         self.SB_time1.setMaximum(30)
         self.SB_time2.setMinimum(0)
         self.SB_time2.setMaximum(30)
-
         self.SB_frequency1.setMinimum(1)
         self.SB_frequency1.setMaximum(20000)
         self.SB_frequency2.setMinimum(1)
         self.SB_frequency2.setMaximum(20000)
+
+        self.SB_time1.setValue(1)
+        self.SB_time2.setValue(2)
+        self.SB_frequency1.setValue(20)
+        self.SB_frequency2.setValue(20000)
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
@@ -81,7 +84,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.goproFrontImagePath = self.ask_open_filename('Choose front GoPro Image')
             self.display_image_to_label(self.LA_imageGoproFront, self.goproFrontImagePath, self.goproColormap)
             self.goproBackImagePath = self.goproFrontImagePath.replace('GPFR', 'GPBK')
-            # self.goproBackImagePath = self.ask_open_filename('Choose back GoPro Image')
             self.display_image_to_label(self.LA_imageGoproBack, self.goproBackImagePath, self.goproColormap)
             self.enable_merge_data_button()
         except TypeError:
@@ -94,7 +96,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def load_from_gopro(self):
         try:
             self.get_gopro_content()
-            print(self.goproFrontImagePath, self.goproBackImagePath)
+            # print(self.goproFrontImagePath, self.goproBackImagePath)
             self.enable_merge_data_button()
         except AttributeError:
             self.PB_fromCamera.setEnabled(False)
@@ -135,7 +137,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def load_noise_data(self):
         self.noiseDataPath = ''
         script_dir = os.path.dirname(os.path.realpath(__file__))
-        self.fs, self.sig = self.wav_file_open(script_dir)
+        self.wav_file_open(script_dir)
         self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
         self.update_FFT()
 
@@ -163,7 +165,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         # Fonction tirée du script Beamforming3D de Soft dB
         fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open File', os.path.expanduser("~/Desktop"),
                                                          'Wave Files (*.wav)')
-
         if fname != '':
             fs, sig = wavfile.read(fname)
             Ls = np.size(sig, 0) / fs
@@ -182,7 +183,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
             self.nbMic = len(self.Aphi)
 
-            return fs, sig
+            self.fs = fs
+            self.sig = sig
 
     def get_angle(self, fs, sig):
         self.t1 = self.SB_time1.value()
@@ -314,177 +316,75 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
                 self.PB_mergeData.setEnabled(True)
 
     def merge_data(self):
-        self.combine_gopro_image(self.goproBackImagePath, self.goproFrontImagePath)
-        # backImg = self.project_sphere_to_plane(self.goproBackImagePath)
-        # frontImg = self.project_sphere_to_plane(self.goproFrontImagePath)
-        # self.combine_gopro_image(backImg, frontImg)
-        # self.project_sphere_to_plane(self.finalImagePath)
-        # self.overlay_gopro_noise()
-        # back = self.undistort_gopro_image(self.goproBackImagePath, 'back')
-        # front = self.undistort_gopro_image(self.goproFrontImagePath, 'front')
-        # self.combine_gopro_image(back, front)
+        back = self.unwarp_image(self.goproBackImagePath)
+        front = self.unwarp_image(self.goproFrontImagePath)
+        self.combine_gopro_image(back, front)
+        self.overlay_gopro_noise()
         self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
-        # self.stitch_gopro_image()
         self.PB_saveAs.setEnabled(True)
 
-    def project_sphere_to_plane(self, path):
-        originalImage = cv2.imread(path)
+    def unwarp_image(self, img_path):
+        img = cv2.imread(img_path)
+        print(img_path)
+        H, W, dim = img.shape
+        print(H, W, dim)
+        xmap, ymap = self.build_mapping(W, H, W, H, self.fov)
+        img_dewarped = cv2.remap(img, xmap, ymap, cv2.INTER_LINEAR)
+        return img_dewarped
 
-        if originalImage.size == 0:
-            print('Image vide')
-            return None
+    def equirectangular_projection(self, x_proj, y_proj, W, H, fov):
+        """Return the equirectangular projection on a unit sphere,
+            given cartesian coordinates of the de-warped image."""
+        theta_alt = x_proj * fov / W
+        phi_alt = y_proj * np.pi / H
 
-        print(originalImage.shape)
-        row = originalImage.shape[0]  # 3000
-        col = originalImage.shape[1]  # 3104
-        channel = originalImage.shape[2]  # 3
+        x = np.sin(theta_alt) * np.cos(phi_alt)
+        y = np.sin(phi_alt)
+        z = np.cos(theta_alt) * np.cos(phi_alt)
 
-        outImg = np.zeros((row, col, channel), dtype=np.uint8)
+        return np.arctan2(y, x), np.arctan2(np.sqrt(x ** 2 + y ** 2), z)
 
-        for i in range(row):
-            for j in range(col):
-                [x, y] = self.transform_rThetaPhi_to_xyz(j, i, col, row)
+    def build_mapping(self, Ws, Hs, Wd, Hd, fov):
+        """Return a mapping from de-warped images to fisheye images."""
+        fov = fov * np.pi / 180.0
 
-                if x >= col or y >= row:
-                    continue
+        # cartesian coordinates of the de-warped rectangular image
+        ys, xs = np.indices((Hs, Ws), np.float32)
+        y_proj = Hs / 2.0 - ys
+        x_proj = xs - Ws / 2.0
 
-                if x < 0 or y < 0:
-                    continue
+        # spherical coordinates
+        theta, phi = self.equirectangular_projection(x_proj, y_proj, Ws, Hs, fov)
 
-                color = originalImage[y, x, :]
-                outImg[i, j, :] = color
+        # polar coordinates (of the fisheye image)
+        p = Hd * phi / fov
 
-        # cv2.imwrite(self.finalImagePath, outImg)
-        return outImg
+        # cartesian coordinates of the fisheye image
+        y_fish = p * np.sin(theta)
+        x_fish = p * np.cos(theta)
 
-    def transform_rThetaPhi_to_xyz(self, x, y, srcImgWidth, srcImgHeight):
-        FOV = math.pi/180*180
-        FOV2 = math.pi/180*180
-        width = srcImgWidth
-        height = srcImgHeight
+        ymap = Hd / 2.0 - y_fish
+        xmap = Wd / 2.0 + x_fish
+        return xmap, ymap
 
-        # POLAR ANGLE
-        theta = math.pi * (x / width - 0.5)
-        phi = math.pi* (y / height - 0.5)
-
-        # Vector in 3D space
-        pointSphereX = math.cos(phi) * math.sin(theta)
-        pointSphereY = math.cos(phi) * math.cos(theta)
-        pointSphereZ = math.sin(phi) * math.cos(theta)
-
-        # Calculate fisheye angle and radius
-        theta = math.atan2(pointSphereZ, pointSphereX)
-        phi = math.atan2(math.sqrt(pointSphereX * pointSphereX + pointSphereZ * pointSphereZ), pointSphereY)
-
-        r = width * phi / FOV
-        r2 = height * phi / FOV2
-
-        # Pixel in fisheye space
-        fisheyeX = 0.5 * width + r * math.cos(theta)
-        fisheyeY = 0.5 * height + r2 * math.sin(theta)
-        return [int(fisheyeX), int(fisheyeY)]
-
-    def undistort_gopro_image(self, path, cam):
-        img = self.image2gray(path)
-        DIM = (3104, 3000)
-
-        balance = 0.5
-        dim1 = img.shape[:2][::-1]  # dim1 is the dimension of input image to un-distort
-        assert dim1[0] / dim1[1] == DIM[0] / DIM[1], "Image to undistort needs to have same aspect ratio as the ones used in calibration"
-        dim2 = (1552, 1500)
-        dim3 = dim2
-
-        if not dim2:
-            dim2 = dim1
-        if not dim3:
-            dim3 = dim1
-
-        if cam == 'back':
-            K = np.array([[1074.2857599191434, 0.0, 1543.3434056488918], [0.0, 1071.078247699782, 1515.0166363602277], [0.0, 0.0, 1.0]])
-            D = np.array([-0.02194061779101342, -0.046361048154320884, -0.07769616383646735, 0.15816290585684759])
-
-        if cam == 'front':
-            K = np.array([[1079.9814399045986, 0.0, 1528.5859633524383], [0.0, 1072.7875518001222, 1510.41089087801], [0.0, 0.0, 1.0]])
-            D = np.array([[-0.1411607782390653], [0.48559085304858146], [-0.9416906494594367], [0.6051310023846319]])
-
-        scaled_K = K * dim1[0] / DIM[0]  # The values of K is to scale with image dimension.
-        scaled_K[2][2] = 1.0  # Except that K[2][2] is always 1.0
-        # This is how scaled_K, dim2 and balance are used to determine the final K used to un-distort image. OpenCV document failed to make this clear!
-        new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(scaled_K, D, dim2, np.eye(3),
-                                                                           balance=balance)
-        map1, map2 = cv2.fisheye.initUndistortRectifyMap(scaled_K, D, np.eye(3), new_K, dim3, cv2.CV_16SC2)
-        # map1, map2 = cv2.fisheye.initUndistortRectifyMap(K2, D2, np.eye(3), K2, DIM, cv2.CV_16SC2)
-
-        imgUndistorted = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-        # imgResized = cv2.resize(imgUndistorted, (369, 496))  # Resize image
-        # cv2.imshow("output", imgResized)
-        # cv2.imshow('Image undistorted', imgUndistorted)
-        # cv2.waitKey(0)
-
-        return imgUndistorted
-
-    def combine_gopro_image(self, backImgPath, frontImgPath):
-        backImg = cv2.imread(backImgPath)
-        frontImg = cv2.imread(frontImgPath)
-        lignes, colonnes, dim = frontImg.shape
-        # backImg = backImgPath
-        # frontImg = frontImgPath
-        # lignes, colonnes  = backImg.shape
-        offsetFront = np.zeros((15, colonnes, dim))
-        offsetBack = np.zeros((15, colonnes, dim))
-        backImg = np.vstack((backImg, offsetBack))
-        frontImg = np.vstack((offsetFront, frontImg))
-        finalImage = np.hstack((frontImg[:, :colonnes-105], backImg[:, 110:]))
-        # finalImage = np.hstack((frontImgPath, backImgPath))
+    def combine_gopro_image(self, backImg, frontImg):
+        lignes, colonnes, dim = backImg.shape
+        backImg = np.vstack((backImg, np.zeros((14, colonnes, dim))))
+        frontImg = np.vstack((np.zeros((14, colonnes, dim)), frontImg))
+        finalImage = np.hstack((frontImg[:, :colonnes-45], backImg[:, 65:]))
+        l, c, n = finalImage.shape
+        finalImage = finalImage[20:l-20, :]
         script_dir = os.path.dirname(os.path.realpath(__file__))
         self.finalImagePath = script_dir[:-5] + 'final_image.png'
         self.finalImagePath = self.finalImagePath.replace(os.sep, '/')
         cv2.imwrite(self.finalImagePath, finalImage)
-
-    def stitch_gopro_image(self):
-        img1 = cv2.imread(self.goproFrontImagePath, cv2.IMREAD_GRAYSCALE)
-        img2 = cv2.imread(self.goproBackImagePath, cv2.IMREAD_GRAYSCALE)
-        sift = cv2.ORB_create(nfeatures=5000)
-        # find the keypoints and descriptors with SIFT
-        kp1, des1 = sift.detectAndCompute(img1, None)
-        kp2, des2 = sift.detectAndCompute(img2, None)
-        bf = cv2.BFMatcher()
-        matches = bf.knnMatch(des1, des2, k=2)
-        # Apply ratio test
-        good = []
-        for m in matches:
-            if m[0].distance < 0.5 * m[1].distance:
-                good.append(m)
-        matches = np.asarray(good)
-        print(matches)
-
-
-        if len(matches[:, 0]) >= 4:
-            src = np.float32([kp1[m.queryIdx].pt for m in matches[:, 0]]).reshape(-1, 1, 2)
-            dst = np.float32([kp2[m.trainIdx].pt for m in matches[:, 0]]).reshape(-1, 1, 2)
-
-            H, masked = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
-            # print H
-        else:
-            raise AssertionError('Can’t find enough keypoints.')
-
-        # dst = cv2.warpPerspective(img_, H, (img.shape[1] + img_.shape[1], img.shape[0]))
-        # plt.subplot(122), plt.imshow(dst), plt.title('WarpedImage')
-        # plt.show()
-        # plt.figure()
-        # dst[0:img.shape[0], 0:img.shape[1]] = img
-        # cv2.imwrite('output.jpg', dst)
-        # plt.imshow(dst)
-        # plt.show()
 
     def overlay_gopro_noise(self):
         img = cv2.imread(self.noiseDataPath, cv2.IMREAD_UNCHANGED)
         noiseDataMask = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA))
         goproImageBackground = Image.fromarray(cv2.imread(self.finalImagePath)).convert(noiseDataMask.mode)
         goproImageBackground = goproImageBackground.resize(noiseDataMask.size, Image.ANTIALIAS)
-
         finalImage = Image.blend(goproImageBackground, noiseDataMask, alpha=0.20)
-
         finalImage.save('final_image.png')
 
     def save_final_image(self):
