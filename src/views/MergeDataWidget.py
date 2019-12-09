@@ -164,7 +164,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         except TypeError:
             self.load_noise_data()
 
-    def wav_file_open(self, script_dir):
+    def wav_file_open(self, scriptDir):
         # Fonction tirée du script Beamforming3D de Soft dB
         fname, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open File', os.path.expanduser("~/Desktop"),
                                                          'Wave Files (*.wav)')
@@ -173,11 +173,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             Ls = np.size(sig, 0) / fs
             Time = np.arange(0, np.size(sig, 0), 1) / fs
 
-            sens = pd.read_excel(os.path.join(script_dir, "Supplements/Sensibilite_microphones.xlsx"), header=None)
+            sens = pd.read_excel(os.path.join(scriptDir, "Supplements/Sensibilite_microphones.xlsx"), header=None)
             sens = np.transpose(np.atleast_2d(sens.iloc[1:, 2].values.astype('float64')))
             sig = np.transpose(sig) * sens
 
-            tmp = pd.read_excel(os.path.join(script_dir, "Supplements/Position_microphones.xlsx"), header=None)
+            tmp = pd.read_excel(os.path.join(scriptDir, "Supplements/Position_microphones.xlsx"), header=None)
             Scale_Up = tmp.iloc[0, 3]
 
             self.Aphi = tmp.iloc[3:, 3].values.astype('float64')
@@ -313,6 +313,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             self.update_FFT()
             if self.combinedImagesPath != '':
                 self.overlay_gopro_noise()
+                self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
 
     def enable_merge_data_button(self):
         if self.goproBackImagePath != '' and self.goproFrontImagePath != '' and self.noiseDataPath != '':
@@ -327,8 +328,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
         self.PB_saveAs.setEnabled(True)
 
-    def unwarp_image(self, img_path):
-        img = cv2.imread(img_path)
+    def unwarp_image(self, imgPath):
+        img = cv2.imread(imgPath)
         H, W, _ = img.shape
         xMap, yMap = self.build_mapping(W, H, W, H, self.fov)
         imgDewarped = cv2.remap(img, xMap, yMap, cv2.INTER_LINEAR)
