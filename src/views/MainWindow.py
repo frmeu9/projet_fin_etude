@@ -52,8 +52,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Information)
         msgBox.setText("Acknowledgement: \n \n"
-                       "Thanks to Michel Pearson, Philippe Laliberté and Samuel Duclos for their help and support. "
-                       "Thanks also to PYMARC2 for helping with the programmation (and the css stylesheet). \n \n "
-                       "Finally, thanks to Soft dB Inc. for this opportunity. ")
+                       "First of all, I'd like to thanks Michel Pearson for his trust throughout this project. \n \n "
+                       "Thanks also to PYMARC2 (Marc-André Vigneault) for helping with the programmation (and the css stylesheet) \n \n "
+                       "I'd also like to thanks Philippe Laliberté, Louis-Alexis Boudreault, Simon Gaudy, Nicolas Demers and Samuel Duclos for their helpful insight. \n \n "
+                       "Finally, thanks to Soft dB Inc. for this opportunity.  \n \n \n"
+                       "Françoise Meunier")
         msgBox.setWindowTitle("Acknowledgement")
         msgBox.exec_()

@@ -38,6 +38,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproBackImagePath = ''
         self.combinedImagesPath = ''
         self.finalImagePath = ''
+        scriptDir = os.path.dirname(os.path.realpath(__file__))
+        self.scriptDir = scriptDir[:-5].replace(os.sep, '/')
 
         self.f1 = None
         self.f2 = None
@@ -71,9 +73,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.SB_time2.setValue(2)
         self.SB_frequency1.setValue(20)
         self.SB_frequency2.setValue(20000)
-
-        scriptDir = os.path.dirname(os.path.realpath(__file__))
-        self.scriptDir = scriptDir[:-5].replace(os.sep, '/')
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
