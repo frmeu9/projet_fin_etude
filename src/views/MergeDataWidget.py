@@ -36,6 +36,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.noiseDataPath = ''
         self.goproFrontImagePath = ''
         self.goproBackImagePath = ''
+        self.combinedImagesPath = ''
         self.finalImagePath = ''
 
         self.f1 = None
@@ -70,6 +71,9 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.SB_time2.setValue(2)
         self.SB_frequency1.setValue(20)
         self.SB_frequency2.setValue(20000)
+
+        scriptDir = os.path.dirname(os.path.realpath(__file__))
+        self.scriptDir = scriptDir[:-5].replace(os.sep, '/')
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
@@ -138,7 +142,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.noiseDataPath = ''
         script_dir = os.path.dirname(os.path.realpath(__file__))
         self.wav_file_open(script_dir)
-        self.noiseDataPath = script_dir[:-5] + 'noise_angle.png'
+        self.noiseDataPath = self.scriptDir + 'noise_angle.png'
         self.update_FFT()
 
     def fft_parameter_change(self):
@@ -155,7 +159,6 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         try:
             self.fft_parameter_change()
             self.get_angle(self.fs, self.sig)
-            self.noiseDataPath = self.noiseDataPath.replace(os.sep, '/')
             self.display_image_to_label(self.LA_noiseData, self.noiseDataPath)
             self.enable_merge_data_button()
         except TypeError:
@@ -308,8 +311,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.noiseDataColormap = colormap
         if self.noiseDataPath != '':
             self.update_FFT()
-            if self.finalImagePath != '':
-                self.merge_data()
+            if self.combinedImagesPath != '':
+                self.overlay_gopro_noise()
 
     def enable_merge_data_button(self):
         if self.goproBackImagePath != '' and self.goproFrontImagePath != '' and self.noiseDataPath != '':
@@ -320,27 +323,26 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         front = self.unwarp_image(self.goproFrontImagePath)
         self.combine_gopro_image(back, front)
         self.overlay_gopro_noise()
+        self.finalImagePath = self.scriptDir + 'final_image.png'
         self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
         self.PB_saveAs.setEnabled(True)
 
     def unwarp_image(self, img_path):
         img = cv2.imread(img_path)
-        print(img_path)
-        H, W, dim = img.shape
-        print(H, W, dim)
-        xmap, ymap = self.build_mapping(W, H, W, H, self.fov)
-        img_dewarped = cv2.remap(img, xmap, ymap, cv2.INTER_LINEAR)
-        return img_dewarped
+        H, W, _ = img.shape
+        xMap, yMap = self.build_mapping(W, H, W, H, self.fov)
+        imgDewarped = cv2.remap(img, xMap, yMap, cv2.INTER_LINEAR)
+        return imgDewarped
 
-    def equirectangular_projection(self, x_proj, y_proj, W, H, fov):
+    def equirectangular_projection(self, xProj, yProj, W, H, fov):
         """Return the equirectangular projection on a unit sphere,
             given cartesian coordinates of the de-warped image."""
-        theta_alt = x_proj * fov / W
-        phi_alt = y_proj * np.pi / H
+        thetaAlt = xProj * fov / W
+        phiAlt = yProj * np.pi / H
 
-        x = np.sin(theta_alt) * np.cos(phi_alt)
-        y = np.sin(phi_alt)
-        z = np.cos(theta_alt) * np.cos(phi_alt)
+        x = np.sin(thetaAlt) * np.cos(phiAlt)
+        y = np.sin(phiAlt)
+        z = np.cos(thetaAlt) * np.cos(phiAlt)
 
         return np.arctan2(y, x), np.arctan2(np.sqrt(x ** 2 + y ** 2), z)
 
@@ -350,39 +352,37 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
         # cartesian coordinates of the de-warped rectangular image
         ys, xs = np.indices((Hs, Ws), np.float32)
-        y_proj = Hs / 2.0 - ys
-        x_proj = xs - Ws / 2.0
+        yProj = Hs / 2.0 - ys
+        xProj = xs - Ws / 2.0
 
         # spherical coordinates
-        theta, phi = self.equirectangular_projection(x_proj, y_proj, Ws, Hs, fov)
+        theta, phi = self.equirectangular_projection(xProj, yProj, Ws, Hs, fov)
 
         # polar coordinates (of the fisheye image)
         p = Hd * phi / fov
 
         # cartesian coordinates of the fisheye image
-        y_fish = p * np.sin(theta)
-        x_fish = p * np.cos(theta)
+        yFish = p * np.sin(theta)
+        xFish = p * np.cos(theta)
 
-        ymap = Hd / 2.0 - y_fish
-        xmap = Wd / 2.0 + x_fish
-        return xmap, ymap
+        yMap = Hd / 2.0 - yFish
+        xMap = Wd / 2.0 + xFish
+        return xMap, yMap
 
     def combine_gopro_image(self, backImg, frontImg):
-        lignes, colonnes, dim = backImg.shape
-        backImg = np.vstack((backImg, np.zeros((14, colonnes, dim))))
-        frontImg = np.vstack((np.zeros((14, colonnes, dim)), frontImg))
-        finalImage = np.hstack((frontImg[:, :colonnes-45], backImg[:, 65:]))
-        l, c, n = finalImage.shape
-        finalImage = finalImage[20:l-20, :]
-        script_dir = os.path.dirname(os.path.realpath(__file__))
-        self.finalImagePath = script_dir[:-5] + 'final_image.png'
-        self.finalImagePath = self.finalImagePath.replace(os.sep, '/')
-        cv2.imwrite(self.finalImagePath, finalImage)
+        _, col, dim = backImg.shape
+        backImg = np.vstack((backImg, np.zeros((14, col, dim))))
+        frontImg = np.vstack((np.zeros((14, col, dim)), frontImg))
+        finalImage = np.hstack((frontImg[:, :col-45], backImg[:, 65:]))
+        rows, _, _ = finalImage.shape
+        finalImage = finalImage[20:rows-20, :]
+        self.combinedImagesPath = self.scriptDir + 'combined_images.png'
+        cv2.imwrite(self.combinedImagesPath, finalImage)
 
     def overlay_gopro_noise(self):
         img = cv2.imread(self.noiseDataPath, cv2.IMREAD_UNCHANGED)
         noiseDataMask = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA))
-        goproImageBackground = Image.fromarray(cv2.imread(self.finalImagePath)).convert(noiseDataMask.mode)
+        goproImageBackground = Image.fromarray(cv2.imread(self.combinedImagesPath)).convert(noiseDataMask.mode)
         goproImageBackground = goproImageBackground.resize(noiseDataMask.size, Image.ANTIALIAS)
         finalImage = Image.blend(goproImageBackground, noiseDataMask, alpha=0.20)
         finalImage.save('final_image.png')

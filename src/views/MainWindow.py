@@ -26,8 +26,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def exit_main_window(self):
         noisePath = self.MergeDataWidget.noiseDataPath
+        combinedImagesPath = self.MergeDataWidget.combinedImagesPath
         finalImagePath = self.MergeDataWidget.finalImagePath
         os.remove(noisePath)
+        os.remove(combinedImagesPath)
         os.remove(finalImagePath)
         self.close()
 
