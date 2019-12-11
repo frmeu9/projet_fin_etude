@@ -323,7 +323,9 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def merge_data(self):
         back = self.unwarp_image(self.goproBackImagePath)
+        # back = self.undistort_gopro_image(back, 'back')
         front = self.unwarp_image(self.goproFrontImagePath)
+        # front = self.undistort_gopro_image(front, 'front')
         self.combine_gopro_image(back, front)
         self.overlay_gopro_noise()
         self.finalImagePath = self.scriptDir + 'final_image.png'
@@ -372,10 +374,29 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         xMap = Wd / 2.0 + xFish
         return xMap, yMap
 
+    def undistort_gopro_image(self, array, cam):
+        img = array
+        DIM = (3104, 3000)
+
+        if cam == 'back':
+            K = np.array([[1074.2857599191434, 0.0, 1543.3434056488918], [0.0, 1071.078247699782, 1515.0166363602277],
+                          [0.0, 0.0, 1.0]])
+            D = np.array([-0.02194061779101342, -0.046361048154320884, -0.07769616383646735, 0.15816290585684759])
+
+        if cam == 'front':
+            K = np.array([[1079.9814399045986, 0.0, 1528.5859633524383], [0.0, 1072.7875518001222, 1510.41089087801],
+                          [0.0, 0.0, 1.0]])
+            D = np.array([[-0.1411607782390653], [0.48559085304858146], [-0.9416906494594367], [0.6051310023846319]])
+
+        map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv2.CV_16SC2)
+        imgUndistorted = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+
+        return imgUndistorted
+
     def combine_gopro_image(self, backImg, frontImg):
         _, col, dim = backImg.shape
-        backImg = np.vstack((backImg, np.zeros((14, col, dim))))
-        frontImg = np.vstack((np.zeros((14, col, dim)), frontImg))
+        backImg = np.vstack((backImg, np.zeros((11, col, dim))))
+        frontImg = np.vstack((np.zeros((11, col, dim)), frontImg))
         finalImage = np.hstack((frontImg[:, :col-45], backImg[:, 65:]))
         rows, _, _ = finalImage.shape
         finalImage = finalImage[20:rows-20, :]
