@@ -7,6 +7,7 @@ from scipy.io import wavfile
 import scipy.fftpack as ff
 from goprocam import GoProCamera, constants
 from views.SelectGoproFile import SelectGoproFile
+from views.ProgressBar import ProgressBar
 from bs4 import BeautifulSoup
 from PIL import Image
 from itertools import combinations
@@ -73,6 +74,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.SB_time2.setValue(2)
         self.SB_frequency1.setValue(20)
         self.SB_frequency2.setValue(20000)
+
+        self.progressBar = ProgressBar()
 
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
