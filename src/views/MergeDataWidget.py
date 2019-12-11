@@ -27,8 +27,7 @@ Ui_MergeDataWidget, QtBaseClass = uic.loadUiType(MergeDataWidgetPath)
 
 class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
-    s_progressUpdate = QtCore.pyqtSignal(int)
-    s_progressMessage = QtCore.pyqtSignal(str)
+    s_progressUpdate = QtCore.pyqtSignal(list)
     s_newProgressBar = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
@@ -93,9 +92,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
 
     def connect_signals(self):
         self.s_progressUpdate.connect(self.update_progress_bar)
-        # self.s_progressMessage.connect(self.update_progress_bar)
         self.s_newProgressBar.connect(self.launch_progress_bar)
-        pass
 
     def load_from_computer(self):
         try:
@@ -127,30 +124,31 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         return [node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
 
     def get_gopro_content(self):
-        # gpCam = GoProCamera.GoPro(constants.auth)
-        # cameraDir = gpCam.getMediaFusion()
-        cameraDir = ['http://10.5.5.9/videos/DCIM/100GBACK/GPBK0010.JPG',
-                     'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
-        cameraDir[0] = cameraDir[0][0:37]
-        cameraDir[1] = cameraDir[1][0:38]
-
-        # cameraFile = []
-        # for file in self.get_online_gopro_file(cameraDir[0]):
-        #     cameraFile.append(cameraDir[0][0:15] + file)
-
-        cameraFile = ['http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0006.JPG',
-                      'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
-        for i in range(len(cameraFile)):
-            cameraFile[i] = cameraFile[i][-8:]
-
-        self.selectGoproFile = SelectGoproFile(cameraFile)
-        self.selectGoproFile.exec_()
-        imageFileName = self.selectGoproFile.fileName
-
-        front = 'GPFR' + imageFileName
-        back = 'GPBK' + imageFileName
-        self.goproFrontImagePath = cameraDir[1] + front
-        self.goproBackImagePath = cameraDir[0] + back
+        # # gpCam = GoProCamera.GoPro(constants.auth)
+        # # cameraDir = gpCam.getMediaFusion()
+        # cameraDir = ['http://10.5.5.9/videos/DCIM/100GBACK/GPBK0010.JPG',
+        #              'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+        # cameraDir[0] = cameraDir[0][0:37]
+        # cameraDir[1] = cameraDir[1][0:38]
+        #
+        # # cameraFile = []
+        # # for file in self.get_online_gopro_file(cameraDir[0]):
+        # #     cameraFile.append(cameraDir[0][0:15] + file)
+        #
+        # cameraFile = ['http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0006.JPG',
+        #               'http://10.5.5.9/videos2/DCIM/100GFRNT/GPFR0010.JPG']
+        # for i in range(len(cameraFile)):
+        #     cameraFile[i] = cameraFile[i][-8:]
+        #
+        # self.selectGoproFile = SelectGoproFile(cameraFile)
+        # self.selectGoproFile.exec_()
+        # imageFileName = self.selectGoproFile.fileName
+        #
+        # front = 'GPFR' + imageFileName
+        # back = 'GPBK' + imageFileName
+        # self.goproFrontImagePath = cameraDir[1] + front
+        # self.goproBackImagePath = cameraDir[0] + back
+        pass
 
     def load_noise_data(self):
         self.noiseDataPath = ''
@@ -340,10 +338,10 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.mergeThread.started.connect(self.mergeWorker.run)
         self.mergeThread.start()
 
-    @QtCore.pyqtSlot(int)
-    def update_progress_bar(self, value):
-        self.progressBar.setValue(value)
-        # self.progressBar.setLabelText(string)
+    @QtCore.pyqtSlot(list)
+    def update_progress_bar(self, liste):
+        self.progressBar.setValue(liste[0])
+        self.progressBar.setLabelText(liste[1])
 
     def launch_progress_bar(self):
         self.progressBar = QProgressDialog()
@@ -353,21 +351,17 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def merge_data(self, *args, **kwargs):
         self.s_newProgressBar.emit()
         self.parent.setEnabled(False)
-        # self.launch_progress_bar()
-        self.s_progressMessage.emit("Unwarping 1st image")
+        self.s_progressUpdate.emit([0, "Unwarping 1st image"])
         back = self.unwarp_image(self.goproBackImagePath)
-        self.s_progressUpdate.emit(25)
+        self.s_progressUpdate.emit([25, "Unwarping 2nd image"])
         # back = self.undistort_gopro_image(back, 'back')
-        self.s_progressMessage.emit("Unwarping 2st image")
         front = self.unwarp_image(self.goproFrontImagePath)
-        self.s_progressUpdate.emit(50)
+        self.s_progressUpdate.emit([50, "Combining images"])
         # front = self.undistort_gopro_image(front, 'front')
-        self.s_progressMessage.emit("Combining images")
         self.combine_gopro_image(back, front)
-        self.s_progressUpdate.emit(75)
-        self.s_progressMessage.emit("Overlaying data")
+        self.s_progressUpdate.emit([75, "Overlaying data"])
         self.overlay_gopro_noise()
-        self.s_progressUpdate.emit(100)
+        self.s_progressUpdate.emit([100, ""])
         self.finalImagePath = self.scriptDir + 'final_image.png'
         self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
         self.PB_saveAs.setEnabled(True)
