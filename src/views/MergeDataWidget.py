@@ -1,13 +1,13 @@
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QWidget, QFileDialog
+from PyQt5.QtWidgets import QWidget, QFileDialog, QProgressDialog
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5 import uic, QtCore
 from scipy import signal
 from scipy.io import wavfile
 import scipy.fftpack as ff
 from goprocam import GoProCamera, constants
-from views.SelectGoproFile import SelectGoproFile
-from views.ProgressBar import ProgressBar
+# from views.SelectGoproFile import SelectGoproFile
+from tools.ThreadWorker import Worker
 from bs4 import BeautifulSoup
 from PIL import Image
 from itertools import combinations
@@ -26,11 +26,18 @@ Ui_MergeDataWidget, QtBaseClass = uic.loadUiType(MergeDataWidgetPath)
 
 
 class MergeDataWidget(QWidget, Ui_MergeDataWidget):
-    def __init__(self):
+
+    s_progressUpdate = QtCore.pyqtSignal(int)
+    s_progressMessage = QtCore.pyqtSignal(str)
+    s_newProgressBar = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
         super(MergeDataWidget, self).__init__()
 
         self.setupUi(self)
         self.connect_button()
+        self.connect_signals()
+        self.parent = parent
 
         self.goproColormap = 'gray'
         self.noiseDataColormap = 'magma'
@@ -39,6 +46,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.goproBackImagePath = ''
         self.combinedImagesPath = ''
         self.finalImagePath = ''
+
         scriptDir = os.path.dirname(os.path.realpath(__file__))
         self.scriptDir = scriptDir[:-5].replace(os.sep, '/')
 
@@ -75,15 +83,19 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         self.SB_frequency1.setValue(20)
         self.SB_frequency2.setValue(20000)
 
-        self.progressBar = ProgressBar()
-
     def connect_button(self):
         self.PB_fromComputer.clicked.connect(self.load_from_computer)
         self.PB_loadNoiseFile.clicked.connect(self.load_noise_data)
         self.PB_fromCamera.clicked.connect(self.load_from_gopro)
         self.PB_updateFFT.clicked.connect(self.update_FFT)
         self.PB_saveAs.clicked.connect(self.save_final_image)
-        self.PB_mergeData.clicked.connect(self.merge_data)
+        self.PB_mergeData.clicked.connect(self.launch_merge_thread)
+
+    def connect_signals(self):
+        self.s_progressUpdate.connect(self.update_progress_bar)
+        # self.s_progressMessage.connect(self.update_progress_bar)
+        self.s_newProgressBar.connect(self.launch_progress_bar)
+        pass
 
     def load_from_computer(self):
         try:
@@ -180,11 +192,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
             sig = np.transpose(sig) * sens
 
             tmp = pd.read_excel(os.path.join(scriptDir, "Supplements/Position_microphones.xlsx"), header=None)
-            Scale_Up = tmp.iloc[0, 3]
+            scaleUp = tmp.iloc[0, 3]
 
             self.Aphi = tmp.iloc[3:, 3].values.astype('float64')
             self.Athe = tmp.iloc[3:, 4].values.astype('float64')
-            self.Ar = Scale_Up * tmp.iloc[3:, 2].values.astype('float64')
+            self.Ar = scaleUp * tmp.iloc[3:, 2].values.astype('float64')
 
             self.nbMic = len(self.Aphi)
 
@@ -284,8 +296,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def display_image_to_label(self, myLabel, path, colormap=None):
         pixmap = None
         if colormap != None:
-            imgGray = self.image2gray(path)
-            pixmap = self.array2pixmap(imgGray, colormap)
+            imgGray = self.image_to_gray(path)
+            pixmap = self.array_to_pixmap(imgGray, colormap)
         if colormap == None:
             pixmap = QPixmap(path)
         width = myLabel.frameGeometry().width()
@@ -294,11 +306,11 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         myLabel.setAlignment(QtCore.Qt.AlignCenter)
         myLabel.setPixmap(pixmapScaled)
 
-    def image2gray(self, path):
+    def image_to_gray(self, path):
         img = cv2.imread(path, 0)
         return img
 
-    def array2pixmap(self, array=None, colormap=None):
+    def array_to_pixmap(self, array=None, colormap=None):
         pix = None
         if colormap != None:
             sm = cm.ScalarMappable(cmap=colormap)
@@ -321,16 +333,46 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         if self.goproBackImagePath != '' and self.goproFrontImagePath != '' and self.noiseDataPath != '':
                 self.PB_mergeData.setEnabled(True)
 
-    def merge_data(self):
+    def launch_merge_thread(self):
+        self.mergeThread = QtCore.QThread()
+        self.mergeWorker = Worker(self.merge_data)
+        self.mergeWorker.moveToThread(self.mergeThread)
+        self.mergeThread.started.connect(self.mergeWorker.run)
+        self.mergeThread.start()
+
+    @QtCore.pyqtSlot(int)
+    def update_progress_bar(self, value):
+        self.progressBar.setValue(value)
+        # self.progressBar.setLabelText(string)
+
+    def launch_progress_bar(self):
+        self.progressBar = QProgressDialog()
+        self.progressBar.setWindowTitle("Merging data progress")
+        self.progressBar.show()
+
+    def merge_data(self, *args, **kwargs):
+        self.s_newProgressBar.emit()
+        self.parent.setEnabled(False)
+        # self.launch_progress_bar()
+        self.s_progressMessage.emit("Unwarping 1st image")
         back = self.unwarp_image(self.goproBackImagePath)
+        self.s_progressUpdate.emit(25)
         # back = self.undistort_gopro_image(back, 'back')
+        self.s_progressMessage.emit("Unwarping 2st image")
         front = self.unwarp_image(self.goproFrontImagePath)
+        self.s_progressUpdate.emit(50)
         # front = self.undistort_gopro_image(front, 'front')
+        self.s_progressMessage.emit("Combining images")
         self.combine_gopro_image(back, front)
+        self.s_progressUpdate.emit(75)
+        self.s_progressMessage.emit("Overlaying data")
         self.overlay_gopro_noise()
+        self.s_progressUpdate.emit(100)
         self.finalImagePath = self.scriptDir + 'final_image.png'
         self.display_image_to_label(self.LA_finalImage, self.finalImagePath)
         self.PB_saveAs.setEnabled(True)
+        self.parent.setEnabled(True)
+        self.progressBar.close()
 
     def unwarp_image(self, imgPath):
         img = cv2.imread(imgPath)
@@ -399,9 +441,13 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         frontImg = np.vstack((np.zeros((11, col, dim)), frontImg))
         finalImage = np.hstack((frontImg[:, :col-45], backImg[:, 65:]))
         rows, _, _ = finalImage.shape
+        # self.blend_image()
         finalImage = finalImage[20:rows-20, :]
         self.combinedImagesPath = self.scriptDir + 'combined_images.png'
         cv2.imwrite(self.combinedImagesPath, finalImage)
+
+    def blend_image(self):
+        pass
 
     def overlay_gopro_noise(self):
         img = cv2.imread(self.noiseDataPath, cv2.IMREAD_UNCHANGED)
@@ -412,7 +458,7 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
         finalImage.save('final_image.png')
 
     def save_final_image(self):
-        finalImagePixmap = self.array2pixmap()
+        finalImagePixmap = self.array_to_pixmap()
         self.save_data(finalImagePixmap)
 
     def save_data(self, imageToSave):
