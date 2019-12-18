@@ -28,9 +28,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         noisePath = self.MergeDataWidget.noiseDataPath
         combinedImagesPath = self.MergeDataWidget.combinedImagesPath
         finalImagePath = self.MergeDataWidget.finalImagePath
-        os.remove(noisePath)
-        os.remove(combinedImagesPath)
-        os.remove(finalImagePath)
+        if noisePath != '':
+            os.remove(noisePath)
+        if combinedImagesPath != '':
+            os.remove(combinedImagesPath)
+        if combinedImagesPath != '':
+            os.remove(finalImagePath)
         self.close()
 
     def chosen_colormap(self):
