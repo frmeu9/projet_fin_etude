@@ -346,6 +346,8 @@ class MergeDataWidget(QWidget, Ui_MergeDataWidget):
     def launch_progress_bar(self):
         self.progressBar = QProgressDialog()
         self.progressBar.setWindowTitle("Merging data progress")
+        self.progressBar.setFixedSize(400,150)
+        self.progressBar.setCancelButton(None)
         self.progressBar.show()
 
     def merge_data(self, *args, **kwargs):
